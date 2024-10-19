@@ -1,6 +1,7 @@
 package com.krickert.search.indexer.solr.client;
 
 import com.krickert.search.indexer.config.IndexerConfiguration;
+import com.krickert.search.indexer.config.SolrConfiguration;
 import io.micronaut.context.annotation.Bean;
 import io.micronaut.context.annotation.Factory;
 import io.micronaut.context.annotation.Requires;
@@ -8,6 +9,7 @@ import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,13 +33,7 @@ public class SolrClientService {
     @Named("vectorSolrClient")
     public Http2SolrClient vectorSolrClient() {
         log.info("Creating destination vector solr client");
-        String solrUrl = indexerConfiguration.getDestinationSolrConfiguration().getConnection().getUrl();
-        String collection = indexerConfiguration.getDestinationSolrConfiguration().getCollection();
-        Http2SolrClient client = new Http2SolrClient.Builder(solrUrl)
-                .withDefaultCollection(collection)
-                .withFollowRedirects(true)
-                .build();
-        client.addListenerFactory(authenticatedRequestResponseListener);
+        Http2SolrClient client = createClient();
         log.info("Destination vector solr client created.");
         return client;
     }
@@ -63,13 +59,7 @@ public class SolrClientService {
     @Named("inlineSolrClient")
     public Http2SolrClient inlineSolrClient() {
         log.info("Creating inline destination solr client");
-        String solrUrl = indexerConfiguration.getDestinationSolrConfiguration().getConnection().getUrl();
-        String collection = indexerConfiguration.getDestinationSolrConfiguration().getCollection();
-        Http2SolrClient client = new Http2SolrClient.Builder(solrUrl)
-                .withDefaultCollection(collection)
-                .withFollowRedirects(true)
-                .build();
-        client.addListenerFactory(authenticatedRequestResponseListener);
+        Http2SolrClient client = createClient();
         log.info("Destination inline solr client created.");
         return client;
     }
@@ -91,5 +81,25 @@ public class SolrClientService {
         }
     }
 
+    private @NotNull Http2SolrClient createClient() {
+        String solrUrl = indexerConfiguration.getDestinationSolrConfiguration().getConnection().getUrl();
+        String collection = indexerConfiguration.getDestinationSolrConfiguration().getCollection();
+        SolrConfiguration.Connection.Authentication auth =
+                indexerConfiguration.getDestinationSolrConfiguration().getConnection().getAuthentication();
+        Http2SolrClient.Builder clientBuilder = new Http2SolrClient.Builder(solrUrl)
+                .withDefaultCollection(collection)
+                .withFollowRedirects(true);
+        if (auth.isEnabled()) {
+            if (auth.getType().equals("basic")) {
+                assert auth.getUserName() != null;
+                assert auth.getPassword() != null;
+                clientBuilder.withBasicAuthCredentials(auth.getUserName(), auth.getPassword());
+            }
+        }
+
+        Http2SolrClient client = clientBuilder.build();
+        client.addListenerFactory(authenticatedRequestResponseListener);
+        return client;
+    }
 
 }

@@ -3,6 +3,7 @@ package com.krickert.search.indexer.solr.client;
 import com.krickert.search.indexer.config.IndexerConfiguration;
 import com.krickert.search.indexer.config.SolrConfiguration;
 import com.krickert.search.indexer.config.VectorConfig;
+import com.krickert.search.indexer.util.FileLoader;
 import io.micronaut.core.io.ResourceLoader;
 import io.micronaut.core.util.CollectionUtils;
 import jakarta.inject.Inject;
@@ -41,12 +42,12 @@ public class SolrAdminActions {
     private final SolrClient inlineSolrClient;
     private final SolrClient vectorSolrClient;
     private final Collection<String> vectorCollections;
-    private final ResourceLoader resourceLoader;
+    private final FileLoader fileLoader;
 
 
     @Inject
     public SolrAdminActions(SolrClientService solrClientService,
-                            ResourceLoader resourceLoader,
+                            FileLoader fileLoader,
                             IndexerConfiguration indexerConfiguration) {
         checkNotNull(solrClientService);
         checkNotNull(indexerConfiguration);
@@ -57,7 +58,7 @@ public class SolrAdminActions {
         } else {
             this.vectorCollections = List.of();
         }
-        this.resourceLoader = checkNotNull(resourceLoader);
+        this.fileLoader = checkNotNull(fileLoader);
         log.info("SolrAdminActions is created");
     }
 
@@ -149,7 +150,7 @@ public class SolrAdminActions {
     public void uploadConfigSet(SolrClient client, String configFile, String configName) {
         ConfigSetAdminRequest.Upload request = new ConfigSetAdminRequest.Upload();
         request.setConfigSetName(configName);
-        final File file = loadFile(configFile);
+        final File file = fileLoader.loadZipFile(configFile);
         request.setUploadFile(file, "zip");
         // Execute the request
         final ConfigSetAdminResponse response;
@@ -164,27 +165,6 @@ public class SolrAdminActions {
             log.info("Configset uploaded successfully!");
         } else {
             log.error("Error uploading configset: {}", response);
-        }
-    }
-
-    public File loadFile(String configFile) {
-        Optional<URL> resource = resourceLoader.getResource(configFile);
-        if (resource.isEmpty()) {
-            log.error("Resource {} not found", configFile);
-            throw new IllegalStateException("Missing resource file " + configFile);
-        }
-
-        try {
-            URL resourceUrl = resource.get();
-            URI resourceUri = resourceUrl.toURI();
-            Path path = Paths.get(resourceUri);
-            File file = path.toFile();
-
-            log.info("File loaded successfully: {}", file.getAbsolutePath());
-            return file;
-        } catch (Exception e) {
-            log.error("Failed to load file from resource {}", configFile, e);
-            throw new RuntimeException(e);
         }
     }
 

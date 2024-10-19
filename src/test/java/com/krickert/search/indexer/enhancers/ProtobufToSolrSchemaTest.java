@@ -5,7 +5,7 @@ import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.krickert.search.indexer.FileLoader;
+import com.krickert.search.indexer.util.FileLoader;
 import jakarta.inject.Inject;
 import org.w3c.dom.Document;
 
@@ -31,7 +31,7 @@ public class ProtobufToSolrSchemaTest {
         try {
             generateProtoFiles();
             // Load .proto file
-            String protoFileContent = fileLoader.loadResource("file_descriptor_set.pb");
+            String protoFileContent = fileLoader.loadTextFile("file_descriptor_set.pb");
             DynamicSchema dynamicSchema = DynamicSchema.parseFrom(protoFileContent.getBytes());
 
             // Parse into FileDescriptorSet

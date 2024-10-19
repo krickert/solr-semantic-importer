@@ -50,7 +50,7 @@ public class OktaAuthImpl implements OktaAuth {
 
     @Inject
     public OktaAuthImpl(IndexerConfiguration indexerConfiguration) {
-        SolrConfiguration.Connection.Authentication authentication = indexerConfiguration.getSourceSolrConfiguration().getConnection().getAuthentication();
+        SolrConfiguration.Connection.Authentication authentication = indexerConfiguration.getDestinationSolrConfiguration().getConnection().getAuthentication();
         if (oAuthEnabled(authentication)) {
             assert authentication.getClientSecret() != null;
             assert authentication.getClientId() != null;
