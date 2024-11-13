@@ -28,7 +28,7 @@ public class VectorConfigMapper {
         }
 
         javaConfig.setDestinationCollection(protoConfig.getDestinationCollection());
-        javaConfig.setChunkFieldVectorName(protoConfig.getChunkFieldVectorName());
+        javaConfig.setFieldVectorName(protoConfig.getChunkFieldVectorName());
 
         if (protoConfig.hasSimilarityFunction()) {
             javaConfig.setSimilarityFunction(protoConfig.getSimilarityFunction().name());
@@ -78,7 +78,7 @@ public class VectorConfigMapper {
         if (StringUtils.isNotEmpty(javaConfig.getDestinationCollection())) {
             protoBuilder.setDestinationCollection(javaConfig.getDestinationCollection());
         }
-        protoBuilder.setChunkFieldVectorName(javaConfig.getChunkFieldVectorName());
+        protoBuilder.setChunkFieldVectorName(javaConfig.getFieldVectorName());
 
         if (javaConfig.getSimilarityFunction() != null) {
             protoBuilder.setSimilarityFunction(SimilarityFunction.valueOf(javaConfig.getSimilarityFunction().toUpperCase()));

@@ -35,8 +35,8 @@ public class VectorConfig {
     @JsonProperty("destination-collection")
     private String destinationCollection;
 
-    @JsonProperty("chunk-field-vector-name")
-    private String chunkFieldVectorName;
+    @JsonProperty("field-vector-name")
+    private String fieldVectorName;
 
     @JsonProperty("chunk-field-name-requested")
     private String chunkFieldNameRequested;
@@ -109,12 +109,12 @@ public class VectorConfig {
         this.destinationCollection = destinationCollection;
     }
 
-    public String getChunkFieldVectorName() {
-        return chunkFieldVectorName;
+    public String getFieldVectorName() {
+        return fieldVectorName;
     }
 
-    public void setChunkFieldVectorName(String chunkFieldVectorName) {
-        this.chunkFieldVectorName = chunkFieldVectorName;
+    public void setFieldVectorName(String fieldVectorName) {
+        this.fieldVectorName = fieldVectorName;
     }
 
     public String getChunkFieldNameRequested() {
@@ -167,7 +167,7 @@ public class VectorConfig {
                 .add("maxChars", maxChars)
                 .add("model", model)
                 .add("destinationCollection", destinationCollection)
-                .add("chunkFieldVectorName", chunkFieldVectorName)
+                .add("fieldVectorName", fieldVectorName)
                 .add("chunkFieldNameRequested", chunkFieldNameRequested)
                 .add("similarityFunction", similarityFunction)
                 .add("hnswMaxConnections", hnswMaxConnections)

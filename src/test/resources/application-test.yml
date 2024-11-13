@@ -82,7 +82,7 @@ vector-config:
     chunk-field: false
     max-chars: 2000 #defaults to 0 - 0 or negative has the whole thing
     model: mini-LM #feature in progress and will be done soon for the vectorizer
-    chunk-field-vector-name: title-vector
+    field-vector-name: title-vector
     similarity-function: cosine #cosine, dot_product, or euclidean.  Defaults to dot_product
     hnsw-max-connections: 16 #if not filled out, this will default to 16
     hnsw-beam-width: 100 #if not filled out, this will default to 100
@@ -93,7 +93,7 @@ vector-config:
     chunk-size: 300
     model: mini-LM
     destination-collection: body-vectors
-    chunk-field-vector-name: body-chunk-vector
+    field-vector-name: body-chunk-vector
     similarity-function: cosine #cosine, dot_product, or euclidean.  Defaults to dot_product
     hnsw-max-connections: 16 #if not filled out, this will default to 16
     hnsw-beam-width: 100 #if not filled out, this will default to 100
@@ -102,6 +102,20 @@ vector-config:
       collection-config-name: vector_config
       number-of-shards: 1
       number-of-replicas: 2
+
+  body-child:
+    chunk-field: true
+    chunk-overlap: 30
+    chunk-size: 300
+    model: mini-LM
+    destination-collection: ${solr-config.destination.collection}
+    field-vector-name: body-chunk-vector
+    similarity-function: cosine #cosine, dot_product, or euclidean.  Defaults to dot_product
+    hnsw-max-connections: 16 #if not filled out, this will default to 16
+    hnsw-beam-width: 100 #if not filled out, this will default to 100
+    field-name: body
+
+
 
 
 grpc-test-client-config:

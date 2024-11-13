@@ -43,17 +43,21 @@ public class IndexerConfiguration {
             Collection<SolrConfiguration> solrConfigurations,
             @JsonProperty("vectorConfig") Map<String, VectorConfig> vectorConfig
     ) {
+        this.solrConfiguration = solrConfigurations.stream()
+                .collect(Collectors.toMap(SolrConfiguration::getName, solrConfiguration -> solrConfiguration));
+        String destinationCollection = solrConfiguration.get("destination").getCollection();
+
         this.indexerConfigurationProperties = indexerConfigurationProperties;
         this.vectorConfig = createVectorConfig(checkNotNull(vectorConfig));
         this.chunkVectorConfig = this.vectorConfig.entrySet().stream()
-                .filter(entry -> Boolean.TRUE.equals(entry.getValue().getChunkField())) // Handles nulls by treating them as false
+                .filter(entry -> Boolean.TRUE.equals(entry.getValue().getChunkField() &&
+                        !destinationCollection.equals(entry.getValue().getDestinationCollection()))) // Handles nulls by treating them as false
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         this.inlineVectorConfig = this.vectorConfig.entrySet().stream()
-                .filter(entry -> Boolean.FALSE.equals(entry.getValue().getChunkField())) // Handles nulls by treating them as false
+                .filter(entry -> (entry.getValue().getDestinationCollection() != null && entry.getValue().getDestinationCollection().equals(destinationCollection)) || Boolean.FALSE.equals(entry.getValue().getChunkField())) // Handles nulls by treating them as false
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        this.solrConfiguration = solrConfigurations.stream()
-                .collect(Collectors.toMap(SolrConfiguration::getName, solrConfiguration -> solrConfiguration));
     }
+
 
     /**
      * Creates a new vector configuration map where the keys are updated based on a field name
@@ -72,11 +76,11 @@ public class IndexerConfiguration {
             String key = entry.getKey();                // Get current key
             String fieldNameInConfig = entry.getValue().getFieldName(); // Get field name from config
 
-            // Use the field name if it exists; otherwise, use the key itself
-            String fieldName = (fieldNameInConfig != null && !fieldNameInConfig.isEmpty()) ? fieldNameInConfig : key;
-
+            if (fieldNameInConfig == null) {
+                entry.getValue().setFieldName(key);
+            }
             // Put the possibly new key and the same value into the result map
-            result.put(fieldName, entry.getValue());
+            result.put(key, entry.getValue());
         }
 
         // Return the newly created map

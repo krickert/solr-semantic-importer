@@ -4,6 +4,7 @@ micronaut:
   server:
     multipart:
       max-file-size: 104857600  # 100 MB in bytes
+    max-request-size: 1073741824
   router:
     static-resources:
       swagger:
@@ -20,6 +21,10 @@ micronaut:
         retry:
           attempts: 5
           delay: 500ms
+    client:
+      max-content-length: 1073741824
+      connect-timeout: 360s
+      read-timeout: 360s
 
 grpc:
   client:
@@ -77,7 +82,7 @@ vector-config:
   title:
     chunk-field: false
     model: mini-LM
-    chunk-field-vector-name: title-vector
+    field-vector-name: title-vector
     similarity-function: cosine #cosine, dot_product, or euclidean.  Defaults to dot_product
     hnsw-max-connections: 16 #if not filled out, this will default to 16
     hnsw-beam-width: 100 #if not filled out, this will default to 100

@@ -99,7 +99,7 @@ public class ChunkDocumentListener implements DocumentListener {
             List<String> chunkBatch = chunksList.subList(i, endIndex);
 
             EmbeddingsVectorsReply batchReply = getEmbeddingsVectorsReply(chunkBatch);
-            List<SolrInputDocument> chunkDocuments = createChunkDocuments(fieldName, batchReply.getEmbeddingsList(), chunkBatch, i, origDocId, crawlId, dateCreated, vectorConfig.getChunkFieldVectorName());
+            List<SolrInputDocument> chunkDocuments = createChunkDocuments(fieldName, batchReply.getEmbeddingsList(), chunkBatch, i, origDocId, crawlId, dateCreated, vectorConfig.getFieldVectorName());
 
             try {
                 log.info("Adding chunks for parent id {} with {} documents to the {} collection with type VECTOR and document chunk batch {}", origDocId, chunkDocuments.size(), vectorConfig.getDestinationCollection(), i);

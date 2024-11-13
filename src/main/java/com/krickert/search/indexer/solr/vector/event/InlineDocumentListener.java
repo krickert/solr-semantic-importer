@@ -50,7 +50,7 @@ public class InlineDocumentListener implements DocumentListener {
                 String fieldData = Optional.ofNullable(document.getFieldValue(fieldName))
                         .map(Object::toString)
                         .orElse(null);
-                processInlineDocumentField(document, fieldName, fieldData, origDocId);
+                processInlineDocumentField(document, fieldName, fieldData, origDocId, vectorConfig);
             });
         } catch (RuntimeException e) {
             log.error("could not process document with id {} due to error: {}", origDocId, e.getMessage());
@@ -67,21 +67,18 @@ public class InlineDocumentListener implements DocumentListener {
         indexingTracker.documentProcessed();
     }
 
-    private void processInlineDocumentField(SolrInputDocument solrInputDocument, String fieldName, String fieldData, String origDocId) {
+    private void processInlineDocumentField(SolrInputDocument solrInputDocument, String fieldName, String fieldData, String origDocId, VectorConfig vectorConfig) {
         // If the field data is null, log a warning and return early
         if (fieldData == null) {
             log.warn("Field data for {} is null in document with id {}", fieldName, origDocId);
             return;
         }
 
-        // Retrieve the vector configuration for the given field name
-        VectorConfig vectorConfig = inlineVectorConfig.get(fieldName);
-
         // Determine the final field data, possibly truncated if it exceeds the maximum allowed characters
         String finalFieldData = getFinalFieldData(fieldData, vectorConfig);
 
         // Get the name of the vector field from the configuration
-        String vectorFieldName = vectorConfig.getChunkFieldVectorName();
+        String vectorFieldName = vectorConfig.getFieldVectorName();
 
         // Generate embeddings vector reply based on the processed field data
         EmbeddingsVectorReply embeddingsVectorReply = getEmbeddingsVectorReply(finalFieldData);

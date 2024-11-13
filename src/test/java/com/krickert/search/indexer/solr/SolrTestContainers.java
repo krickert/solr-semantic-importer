@@ -1,9 +1,7 @@
 package com.krickert.search.indexer.solr;
 
 import com.krickert.search.indexer.config.IndexerConfiguration;
-import io.micronaut.context.annotation.Requires;
 import io.micronaut.context.annotation.Value;
-import io.micronaut.context.env.Environment;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

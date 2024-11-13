@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.Map;
+
 @MicronautTest
 @Testcontainers
 public class GrpcContainerIntegrationTest {
@@ -17,7 +19,8 @@ public class GrpcContainerIntegrationTest {
     @Test
     void test() {
         Assertions.assertNotNull(clientTestContainers);
-        for (GenericContainer<?> container : clientTestContainers.getContainers()) {
+        for (String containerName : clientTestContainers.getContainers().keySet()) {
+            GenericContainer<?> container = clientTestContainers.getContainers().get(containerName);
             Assertions.assertNotNull(container);
             Assertions.assertTrue(container.isRunning());
             Assertions.assertTrue(container.isCreated());

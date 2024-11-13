@@ -122,14 +122,14 @@ public class SolrDestinationCollectionValidationService {
     private ValidateVectorFieldResponse validateInlineConfig(String fieldName, VectorConfig vectorConfig) {
         String destinationCollection = indexerConfiguration.getDestinationSolrConfiguration().getCollection();
 
-        String vectorFieldName = vectorConfig.getChunkFieldVectorName();
+        String vectorFieldName = vectorConfig.getFieldVectorName();
         if (StringUtils.isEmpty(vectorFieldName)) {
             vectorFieldName = fieldName + "-vector";
         }
         ValidateVectorFieldResponse response = validateVectorField(vectorFieldName, vectorConfig, destinationCollection);
         if (response.fieldChanged()) {
             //change the name of the field in the vector config
-            vectorConfig.setChunkFieldVectorName(response.fieldCreated());
+            vectorConfig.setFieldVectorName(response.fieldCreated());
             vectorConfig.setChunkFieldNameRequested(response.fieldRequested());
             log.info("NOTE!  FILED RQUEST IS NOT THE FIELD WE WILL USE {}", vectorConfig);
         }
@@ -150,14 +150,14 @@ public class SolrDestinationCollectionValidationService {
             solrAdminActions.createCollection(destinationCollection, vectorConfig.getCollectionCreation());
         }
 
-        String vectorFieldName = vectorConfig.getChunkFieldVectorName();
+        String vectorFieldName = vectorConfig.getFieldVectorName();
         if (StringUtils.isEmpty(vectorFieldName)) {
             vectorFieldName = fieldName + "-vector";
         }
 
         ValidateVectorFieldResponse response = validateVectorField(vectorFieldName, vectorConfig, destinationCollection);
         if (response.fieldChanged()) {
-            vectorConfig.setChunkFieldVectorName(response.fieldCreated());
+            vectorConfig.setFieldVectorName(response.fieldCreated());
             vectorConfig.setChunkFieldNameRequested(response.fieldRequested());
             log.info("NOTE!  FILED RQUEST IS NOT THE FIELD WE WILL USE {}", vectorConfig);
         }

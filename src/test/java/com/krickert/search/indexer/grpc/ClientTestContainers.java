@@ -25,13 +25,13 @@ import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-@Requires(notEnv = Environment.DEVELOPMENT)
+@Requires(env = Environment.TEST)
 @Singleton
 public class ClientTestContainers {
 
     private static final Logger log = LoggerFactory.getLogger(ClientTestContainers.class);
 
-    private static final List<GenericContainer<?>> containers = Lists.newArrayList();
+    private static final Map<String, GenericContainer<?>> containers = Maps.newHashMap();
     private static final Map<String, GrpcEntry> containerRegistry = Maps.newHashMap();
 
     private final Map<String, GrpcClientConfig> grpcClientConfigs;
@@ -52,7 +52,10 @@ public class ClientTestContainers {
 
     private void initializeContainers(Map<String, GrpcClientConfig> grpcClientConfigs, IndexerConfiguration configuration) {
         for (Map.Entry<String, GrpcClientConfig> entry : grpcClientConfigs.entrySet()) {
-            containers.add(createContainer(entry.getValue(), configuration));
+            String serviceName = getServiceName(entry.getValue().getDockerImageName());
+            if (!containers.containsKey(serviceName)) {
+                containers.put(serviceName, createContainer(entry.getValue(), configuration));
+            }
         }
     }
 
@@ -82,11 +85,10 @@ public class ClientTestContainers {
             containerRegistry.put(service, new GrpcEntry(
                     config.getDockerImageName(),
                     container.getHost(),
-                    container.getMappedPort(config.getGrpcMappedPort()),
-                    container.getMappedPort(config.getRestMappedPort())));
+                    grpcPort,
+                    restPort));
             if (service.equals("vectorizer") || service.equals("chunker")) {
                 configuration.getIndexerConfigurationProperties().setVectorGrpcChannel("localhost:" + grpcPort);
-
             }
 
         } catch (Exception e) {
@@ -124,7 +126,7 @@ public class ClientTestContainers {
         cmd.withHostConfig(hostConfig);
     }
 
-    public List<GenericContainer<?>> getContainers() {
+    public Map<String, GenericContainer<?>> getContainers() {
         return containers;
     }
 

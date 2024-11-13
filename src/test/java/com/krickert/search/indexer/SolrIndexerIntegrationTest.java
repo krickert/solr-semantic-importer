@@ -16,11 +16,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.GenericContainer;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @MicronautTest
@@ -36,7 +37,11 @@ public class SolrIndexerIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        clientTestContainers.getContainers().forEach(container -> log.info("Container {}: {}", container.getContainerName(), container.getHost()));
+        Map<String, GenericContainer<?>> containerMap = clientTestContainers.getContainers();
+        for (String containerName : containerMap.keySet()) {
+            GenericContainer<?> container = containerMap.get(containerName);
+            log.info("Container [{}]: Host:[{}] Port Bindings:[{}] ", containerName, container.getHost(), container.getPortBindings());
+        }
     }
 
     @Inject

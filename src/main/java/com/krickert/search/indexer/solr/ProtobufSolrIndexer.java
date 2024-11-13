@@ -3,6 +3,7 @@ package com.krickert.search.indexer.solr;
 import com.google.protobuf.Message;
 import com.krickert.search.indexer.config.IndexerConfiguration;
 import com.krickert.search.indexer.enhancers.ProtobufToSolrDocument;
+import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -22,34 +23,30 @@ public class ProtobufSolrIndexer {
 
     private final ProtobufToSolrDocument protobufToSolrDocument;
     private final IndexerConfiguration indexerConfiguration;
+    private final SolrClient solrClient;
 
+    @Inject
     public ProtobufSolrIndexer(ProtobufToSolrDocument protobufToSolrDocument,
-                               IndexerConfiguration indexerConfiguration) {
+                               IndexerConfiguration indexerConfiguration,
+                               SolrClient solrClient) {
         this.protobufToSolrDocument = protobufToSolrDocument;
         this.indexerConfiguration = indexerConfiguration;
+        this.solrClient = solrClient;
         log.info("ProtobufSolrIndexer creatted.");
     }
 
     public void exportProtobufToSolr(Collection<Message> protos) {
         List<SolrInputDocument> solrDocuments = protos.stream().map(protobufToSolrDocument::convertProtobufToSolrDocument).collect(Collectors.toList());
 
-        try (SolrClient solrClient = createSolr9Client()) {
-            String collection = indexerConfiguration.getDestinationSolrConfiguration().getCollection();
-            try {
-                solrClient.add(collection, solrDocuments);
-                solrClient.commit(collection);
-            } catch (SolrServerException | IOException e) {
-                log.error("Commit solr failed for collection {}", collection, e);
-            }
-        } catch (IOException e) {
-            log.error("Couldn't insert {}", protos, e);
+        String collection = indexerConfiguration.getDestinationSolrConfiguration().getCollection();
+        try {
+            solrClient.add(collection, solrDocuments);
+            solrClient.commit(collection);
+        } catch (SolrServerException | IOException e) {
+            log.error("Commit solr failed for collection {}", collection, e);
         }
+
     }
 
-    protected SolrClient createSolr9Client() {
-        String baseUrl = indexerConfiguration.getDestinationSolrConfiguration().getConnection().getUrl();
-        log.info("Base Solr URL: {}", baseUrl);
-        return new Http2SolrClient.Builder(baseUrl).withDefaultCollection(indexerConfiguration.getDestinationSolrConfiguration().getCollection()).build();
-    }
 
 }

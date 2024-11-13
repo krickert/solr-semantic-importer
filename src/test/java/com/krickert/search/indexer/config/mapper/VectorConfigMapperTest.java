@@ -27,7 +27,7 @@ class VectorConfigMapperTest {
         assertEquals(javaConfig.getChunkSize().intValue(), protoConfig.getChunkOptions().getLength());
         assertEquals(javaConfig.getModel(), protoConfig.getEmbeddingModel().getEmbeddingModel());
         assertEquals(javaConfig.getDestinationCollection(), protoConfig.getDestinationCollection());
-        assertEquals(javaConfig.getChunkFieldVectorName(), protoConfig.getChunkFieldVectorName());
+        assertEquals(javaConfig.getFieldVectorName(), protoConfig.getChunkFieldVectorName());
         assertEquals(javaConfig.getSimilarityFunction(), protoConfig.getSimilarityFunction().name());
         assertEquals(javaConfig.getHnswMaxConnections().intValue(), protoConfig.getHnswOptions().getHnswMaxConnections());
         assertEquals(javaConfig.getHnswBeamWidth().intValue(), protoConfig.getHnswOptions().getHnswBeamWidth());
@@ -52,7 +52,7 @@ class VectorConfigMapperTest {
         assertEquals(protoConfig.getChunkOptions().getLength(), javaConfig.getChunkSize().intValue());
         assertEquals(protoConfig.getEmbeddingModel().getEmbeddingModel(), javaConfig.getModel());
         assertEquals(protoConfig.getDestinationCollection(), javaConfig.getDestinationCollection());
-        assertEquals(protoConfig.getChunkFieldVectorName(), javaConfig.getChunkFieldVectorName());
+        assertEquals(protoConfig.getChunkFieldVectorName(), javaConfig.getFieldVectorName());
         assertEquals(protoConfig.getSimilarityFunction().name(), javaConfig.getSimilarityFunction());
         assertEquals(protoConfig.getHnswOptions().getHnswMaxConnections(), javaConfig.getHnswMaxConnections().intValue());
         assertEquals(protoConfig.getHnswOptions().getHnswBeamWidth(), javaConfig.getHnswBeamWidth().intValue());
@@ -69,7 +69,7 @@ class VectorConfigMapperTest {
         javaConfig.setChunkField(true);
         javaConfig.setModel("ALL_MINILM_L12_V2");
         javaConfig.setDestinationCollection("myCollection");
-        javaConfig.setChunkFieldVectorName("chunkVector");
+        javaConfig.setFieldVectorName("chunkVector");
         javaConfig.setSimilarityFunction("COSINE");
         javaConfig.setHnswMaxConnections(16);
         javaConfig.setHnswBeamWidth(8);
