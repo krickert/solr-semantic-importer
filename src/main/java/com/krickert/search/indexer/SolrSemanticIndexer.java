@@ -21,11 +21,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.Date;
 import java.util.UUID;
+import java.util.concurrent.*;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.krickert.search.indexer.tracker.IndexingTracker.TaskType.MAIN;
@@ -45,6 +47,9 @@ public class SolrSemanticIndexer implements SemanticIndexer {
     private final SolrSourceDocumentPublisher solrSourceDocumentPublisher;
     private final SolrChunkDocumentPublisher solrChunkDocumentPublisher;
     private final IndexerConfigurationProperties indexerConfigurationProperties;
+    private final ConcurrentMap<UUID, IndexingStatus> crawlStatusMap;
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
 
     @Inject
     public SolrSemanticIndexer(HttpSolrSelectClient httpSolrSelectClient,
@@ -70,10 +75,11 @@ public class SolrSemanticIndexer implements SemanticIndexer {
         this.solrSourceDocumentPublisher = solrSourceDocumentPublisher;
         this.solrChunkDocumentPublisher = solrChunkDocumentPublisher;
         this.indexerConfigurationProperties = indexerConfigurationProperties;
+        this.crawlStatusMap = new ConcurrentHashMap<>();
     }
 
     @Override
-    public void runDefaultExportJob() throws IndexingFailedExecption {
+    public void runDefaultExportJob(UUID crawlId) throws IndexingFailedExecption {
         IndexerConfiguration indexerConfiguration = defaultIndexerConfiguration;
         String solr7Host = indexerConfiguration.getSourceSolrConfiguration().getConnection().getUrl();
         String solrSourceCollection = indexerConfiguration.getSourceSolrConfiguration().getCollection();
@@ -84,7 +90,7 @@ public class SolrSemanticIndexer implements SemanticIndexer {
         solrDestinationCollectionValidationService.validate();
 
         // Create the crawler ID. This will be saved in the collection and documents that are not matching this crawler ID will be deleted
-        UUID crawlId = UUID.randomUUID();
+        crawlStatusMap.put(crawlId, new IndexingStatus(crawlId.toString(), indexerConfiguration, 0, 0, 0, 0, 0, 0, null, null, "Indexing started", 0, 0, 0, IndexingStatus.OverallStatus.RUNNING, null));
 
         long totalExpected = httpSolrSelectClient.getTotalNumberOfDocumentsForCollection(solr7Host, solrSourceCollection);
         assert totalExpected >= 0;
@@ -108,17 +114,28 @@ public class SolrSemanticIndexer implements SemanticIndexer {
         if (indexingTracker.getMainTaskStatus().getOverallStatus() == IndexingStatus.OverallStatus.FAILED) {
             String errorMessage = String.format("Indexing job %s failed.  End status: \n%s", crawlId, indexingTracker.getMainTaskStatus());
             log.error(errorMessage);
+            updateCrawlStatus(crawlId, IndexingStatus.OverallStatus.FAILED, errorMessage);
             throw new IndexingFailedExecption(errorMessage);
         }
-        //deleteOrphans(solrDestinationCollection, crawlId);
+        updateCrawlStatus(crawlId, IndexingStatus.OverallStatus.COMPLETED, "Indexing completed successfully");
+    }
+
+    @Override
+    public void updateCrawlStatus(UUID crawlId, IndexingStatus.OverallStatus status, String message) {
+        crawlStatusMap.computeIfPresent(crawlId, (key, existingStatus) -> {
+            existingStatus.setOverallStatus(status);
+            existingStatus.setCurrentStatusMessage(message);
+            existingStatus.setEndTime(LocalDateTime.now());
+            return existingStatus;
+        });
     }
 
     private void waitForIndexingCompletion(IndexingTracker.TaskType taskType) throws IndexingFailedExecption {
         int maxWarnings = indexerConfigurationProperties.getLoopMaxWarnings() == null ? 3 : indexerConfigurationProperties.getLoopMaxWarnings();
-        int waitTimeInSeconds = indexerConfigurationProperties.getLoopCheckSleepTimeSeconds() == null ? 10 : indexerConfigurationProperties.getLoopCheckSleepTimeSeconds(); // Time to wait between checks for new documents
+        int waitTimeInSeconds = indexerConfigurationProperties.getLoopCheckSleepTimeSeconds() == null ? 10 : indexerConfigurationProperties.getLoopCheckSleepTimeSeconds();
         int warningCount = 0;
         long previousProcessedCount = 0;
-        IndexingStatus taskStatus = getStatusByTaskType(taskType); // Getting the respective task status.
+        IndexingStatus taskStatus = getStatusByTaskType(taskType);
         long totalExpected = taskStatus.getTotalDocumentsFound();
 
         while (true) {
@@ -138,7 +155,8 @@ public class SolrSemanticIndexer implements SemanticIndexer {
 
             // Wait for some time before checking again
             try {
-                Thread.sleep(waitTimeInSeconds * 1000);
+                //noinspection BusyWait
+                Thread.sleep(waitTimeInSeconds * 1000L);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new IndexingFailedExecption("Waiting for indexing completion was interrupted", e);
@@ -165,15 +183,12 @@ public class SolrSemanticIndexer implements SemanticIndexer {
         }
     }
 
+
     private IndexingStatus getStatusByTaskType(IndexingTracker.TaskType taskType) {
-        switch (taskType) {
-            case MAIN:
-                return indexingTracker.getMainTaskStatus();
-            case VECTOR:
-                return indexingTracker.getVectorTaskStatus();
-            default:
-                throw new IllegalArgumentException("Unknown task type: " + taskType);
-        }
+        return switch (taskType) {
+            case MAIN -> indexingTracker.getMainTaskStatus();
+            case VECTOR -> indexingTracker.getVectorTaskStatus();
+        };
     }
 
     private void deleteOrphans(String solrDestinationCollection, UUID crawlId) {

@@ -2,23 +2,25 @@ package com.krickert.search.indexer.controller;
 
 import com.krickert.search.indexer.IndexingFailedExecption;
 import com.krickert.search.indexer.SemanticIndexer;
-import com.krickert.search.indexer.config.IndexerConfiguration;
 import com.krickert.search.indexer.dto.IndexingStatus;
 import com.krickert.search.indexer.service.HealthService;
 import com.krickert.search.indexer.service.IndexerService;
 import io.micronaut.http.HttpResponse;
-import io.micronaut.http.HttpStatus;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
+import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.http.annotation.QueryValue;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
 import jakarta.inject.Inject;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
-@Controller("/indexer")
+@Controller("/index")
 public class IndexerController {
 
     private final IndexerService indexerService;
@@ -32,29 +34,30 @@ public class IndexerController {
         this.semanticIndexer = semanticIndexer;
     }
 
-    @Get("/start")
+    @Post
     @Secured(SecurityRule.IS_ANONYMOUS)
-    public HttpResponse<String> startIndexing() throws IndexingFailedExecption {
-        semanticIndexer.runDefaultExportJob();
-        return HttpResponse.ok("Indexing job started");
+    @ExecuteOn(TaskExecutors.IO)
+    public HttpResponse<Map<String, String>> startIndexing() {
+        UUID crawlId = UUID.randomUUID();
+        CompletableFuture.runAsync(() -> {
+            try {
+                semanticIndexer.runDefaultExportJob(crawlId);
+            } catch (IndexingFailedExecption e) {
+                // Log error and update status map in SemanticIndexer
+                semanticIndexer.updateCrawlStatus(crawlId, IndexingStatus.OverallStatus.FAILED, e.getMessage());
+            }
+        });
+
+        // Build the response with an "accepted" status and a JSON body
+        Map<String, String> responseBody = Collections.singletonMap("crawlId", crawlId.toString());
+        return HttpResponse.accepted().body(responseBody);
     }
 
-    @Post("/registerConfig")
+    @Get("/{crawlId}")
     @Secured(SecurityRule.IS_ANONYMOUS)
-    public HttpResponse<String> registerConfig(IndexerConfiguration config) {
+    public HttpResponse<IndexingStatus> getStatus(@PathVariable UUID crawlId) {
         try {
-            indexerService.registerConfiguration(config);
-            return HttpResponse.ok("Configuration registered: " + config.getName());
-        } catch (Exception e) {
-            return HttpResponse.status(HttpStatus.SERVICE_UNAVAILABLE).body(e.getMessage());
-        }
-    }
-
-    @Get("/status")
-    @Secured(SecurityRule.IS_ANONYMOUS)
-    public HttpResponse<IndexingStatus> getStatus() {
-        try {
-            IndexingStatus status = indexerService.getCurrentStatus();
+            IndexingStatus status = indexerService.getStatusByCrawlId(crawlId);
             return HttpResponse.ok(status);
         } catch (Exception e) {
             IndexingStatus errorStatus = new IndexingStatus();

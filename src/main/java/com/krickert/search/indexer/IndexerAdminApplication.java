@@ -4,6 +4,10 @@ import io.micronaut.context.ApplicationContext;
 import io.micronaut.runtime.Micronaut;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.UUID;
 
 @OpenAPIDefinition(
         info = @Info(
@@ -12,6 +16,7 @@ import io.swagger.v3.oas.annotations.info.Info;
         )
 )
 public class IndexerAdminApplication {
+    private static final Logger log = LoggerFactory.getLogger(IndexerAdminApplication.class);
 
     public static void main(String[] args) {
         boolean runIndexer = false;
@@ -24,8 +29,9 @@ public class IndexerAdminApplication {
         if (runIndexer) {
             try (ApplicationContext context = Micronaut.build(args).banner(false).start()) {
                 SemanticIndexer indexer = context.getBean(SemanticIndexer.class);
-                indexer.runDefaultExportJob();
-                System.out.println("Indexing completed.");
+                UUID crawlId = UUID.randomUUID();
+                indexer.runDefaultExportJob(crawlId);
+                log.info("Indexing completed for crawl {}.", crawlId);
                 System.exit(0);
             } catch (IndexingFailedExecption e) {
                 System.err.println("There was an indexing failure");

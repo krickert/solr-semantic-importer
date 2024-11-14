@@ -15,8 +15,8 @@ import io.micronaut.scheduling.annotation.Scheduled;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
+import jakarta.validation.constraints.NotNull;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,10 +89,6 @@ public class SolrDestinationCollectionValidationService {
             // Return a default dimensionality when exception occurs
             return null; // if dimensions do no exist make it null
         }
-    }
-
-    public Integer getDimensionality() {
-        return dimensionality;
     }
 
     public void validate() {

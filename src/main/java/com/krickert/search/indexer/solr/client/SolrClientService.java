@@ -7,11 +7,13 @@ import io.micronaut.context.annotation.Factory;
 import io.micronaut.context.annotation.Requires;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
+import jakarta.validation.constraints.NotNull;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 @Factory
 public class SolrClientService {
@@ -86,20 +88,24 @@ public class SolrClientService {
         String collection = indexerConfiguration.getDestinationSolrConfiguration().getCollection();
         SolrConfiguration.Connection.Authentication auth =
                 indexerConfiguration.getDestinationSolrConfiguration().getConnection().getAuthentication();
+
         Http2SolrClient.Builder clientBuilder = new Http2SolrClient.Builder(solrUrl)
                 .withDefaultCollection(collection)
                 .withFollowRedirects(true);
+
         if (auth.isEnabled()) {
-            if (auth.getType().equals("basic")) {
+            if ("basic".equals(auth.getType())) {
                 assert auth.getUserName() != null;
                 assert auth.getPassword() != null;
                 clientBuilder.withBasicAuthCredentials(auth.getUserName(), auth.getPassword());
             }
         }
 
-        Http2SolrClient client = clientBuilder.build();
-        client.addListenerFactory(authenticatedRequestResponseListener);
-        return client;
+        // Add the listener factory to the builder
+        clientBuilder.withListenerFactory(List.of(authenticatedRequestResponseListener));
+
+        return clientBuilder.build();
     }
+
 
 }

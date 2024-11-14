@@ -3,7 +3,6 @@ package com.krickert.search.indexer;
 import com.krickert.search.indexer.config.IndexerConfiguration;
 import com.krickert.search.indexer.enhancers.ProtobufToSolrDocument;
 import com.krickert.search.indexer.grpc.ClientTestContainers;
-import com.krickert.search.indexer.grpc.Clients;
 import com.krickert.search.indexer.grpc.TestClients;
 import com.krickert.search.indexer.solr.SolrDocumentConverter;
 import com.krickert.search.indexer.solr.SolrTestContainers;
@@ -21,6 +20,7 @@ import org.testcontainers.containers.GenericContainer;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -67,10 +67,12 @@ public class SolrIndexerIntegrationTest {
     void testSemanticIndexer() throws IndexingFailedExecption {
         //this would just run, but we first have to setup the source and destination solr
         setupSolr7ForExportTest();
-        semanticIndexer.runDefaultExportJob();
+        UUID uuid = UUID.randomUUID();
+        semanticIndexer.runDefaultExportJob(uuid);
 
         //let's reindex everything - see if it works or messes up
-        semanticIndexer.runDefaultExportJob();
+        uuid = UUID.randomUUID();
+        semanticIndexer.runDefaultExportJob(uuid);
     }
 
     private void setupSolr7ForExportTest() {

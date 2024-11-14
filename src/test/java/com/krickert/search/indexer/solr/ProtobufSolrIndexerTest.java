@@ -8,13 +8,10 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -41,11 +38,12 @@ class ProtobufSolrIndexerTest {
 
     @InjectMocks
     private ProtobufSolrIndexer protobufSolrIndexer;
+    private AutoCloseable autoCloseable;
 
     @BeforeEach
     void setUp()  {
 
-        MockitoAnnotations.openMocks(this);
+        this.autoCloseable = MockitoAnnotations.openMocks(this);
         SolrConfiguration configuration = new SolrConfiguration("testCollection");
         configuration.setCollection("testCollection");
         SolrConfiguration.Connection connection = new SolrConfiguration.Connection();
@@ -54,16 +52,21 @@ class ProtobufSolrIndexerTest {
         when(indexerConfiguration.getDestinationSolrConfiguration()).thenReturn(configuration);
         // Mock solrClient add and commit methods to avoid real HTTP calls
         try {
-            when(solrClient.add(eq("testCollection"), any(Collection.class))).thenReturn(new UpdateResponse());
+            when(solrClient.add(eq("testCollection"), ArgumentMatchers.<Collection<SolrInputDocument>>any()))
+                    .thenReturn(new UpdateResponse());
             when(solrClient.commit("testCollection")).thenReturn(new UpdateResponse());
             // Use doReturn to simulate the non-void methods without actual HTTP calls
-            doReturn(null).when(solrClient).add(eq("testCollection"), any(Collection.class));
+            doReturn(null).when(solrClient).add(eq("testCollection"), ArgumentMatchers.<Collection<SolrInputDocument>>any());
             doReturn(null).when(solrClient).commit("testCollection");
         } catch (SolrServerException | IOException e) {
             fail(e);
         }
     }
 
+    @AfterEach
+    void tearDown() throws Exception {
+        autoCloseable.close();
+    }
 
     @Test
     void testExportProtobufToSolr() throws SolrServerException, IOException {
@@ -89,13 +92,13 @@ class ProtobufSolrIndexerTest {
         Message mockMessage = mock(Message.class);
         SolrInputDocument mockSolrDocument = new SolrInputDocument();
         when(protobufToSolrDocument.convertProtobufToSolrDocument(mockMessage)).thenReturn(mockSolrDocument);
-        doThrow(new IOException("Test IOException")).when(solrClient).add(any(String.class), any(Collection.class));
+        doThrow(new IOException("Test IOException")).when(solrClient).add(any(String.class), ArgumentMatchers.<Collection<SolrInputDocument>>any());
 
         // Act
         protobufSolrIndexer.exportProtobufToSolr(List.of(mockMessage));
 
         // Assert
-        verify(solrClient, times(1)).add(eq("testCollection"), any(Collection.class));
+        verify(solrClient, times(1)).add(eq("testCollection"), ArgumentMatchers.<Collection<SolrInputDocument>>any());
         verify(solrClient, never()).commit(any(String.class));
     }
 
@@ -111,7 +114,7 @@ class ProtobufSolrIndexerTest {
         protobufSolrIndexer.exportProtobufToSolr(List.of(mockMessage));
 
         // Assert
-        verify(solrClient, times(1)).add(eq("testCollection"), any(Collection.class));
+        verify(solrClient, times(1)).add(eq("testCollection"), ArgumentMatchers.<Collection<SolrInputDocument>>any());
         verify(solrClient, times(1)).commit(any(String.class));
     }
 }

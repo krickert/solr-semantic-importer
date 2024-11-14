@@ -8,6 +8,8 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.solr.common.SolrInputDocument;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URL;
@@ -18,6 +20,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 @Singleton
 public class MsMarcoDownloader {
+    private static final Logger log = LoggerFactory.getLogger(MsMarcoDownloader.class);
+
 
     @Value("${tgz.url}")
     private String tgzUrl;
@@ -35,7 +39,7 @@ public class MsMarcoDownloader {
     private String proxyPassword;
 
 
-    private BlockingQueue<SolrInputDocument> solrQueue = new LinkedBlockingQueue<>(10_000_000);
+    private final BlockingQueue<SolrInputDocument> solrQueue = new LinkedBlockingQueue<>(10_000_000);
 
     @Async
     public void downloadAndProcessTgz() {
@@ -43,7 +47,7 @@ public class MsMarcoDownloader {
             downloadTgz();
             processTgz();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
         }
     }
 
@@ -59,7 +63,7 @@ public class MsMarcoDownloader {
              TarArchiveInputStream tis = new TarArchiveInputStream(gzis)) {
 
             TarArchiveEntry entry;
-            while ((entry = tis.getNextTarEntry()) != null) {
+            while ((entry = tis.getNextEntry()) != null) {
                 if (entry.isFile() && entry.getName().endsWith(".tsv")) {
                     processTsv(tis);
                 }

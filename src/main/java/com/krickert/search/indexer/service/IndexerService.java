@@ -5,14 +5,13 @@ import com.krickert.search.indexer.SemanticIndexer;
 import com.krickert.search.indexer.config.IndexerConfiguration;
 import com.krickert.search.indexer.dto.IndexingStatus;
 import com.krickert.search.indexer.tracker.IndexingTracker;
-import io.micronaut.scheduling.annotation.Scheduled;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -40,11 +39,11 @@ public class IndexerService {
             if (!isIndexerReady()) {
                 return "Indexer is not ready. Please check the status of vectorizer and chunker services.";
             }
-            String indexingId = generateIndexingId();
+            UUID indexingId = generateIndexingId();
 
             new Thread(() -> {
                 try {
-                    semanticIndexer.runDefaultExportJob();
+                    semanticIndexer.runDefaultExportJob(indexingId);
                 } catch (IndexingFailedExecption e) {
                     throw new RuntimeException(e);
                 }
@@ -82,8 +81,8 @@ public class IndexerService {
         return status;
     }
 
-    private String generateIndexingId() {
-        return "indexingId-" + LocalDateTime.now(); // Simplified for example
+    private UUID generateIndexingId() {
+        return UUID.randomUUID();
     }
 
     public List<IndexingStatus> getHistory(int limit) {
@@ -94,4 +93,7 @@ public class IndexerService {
         configurations.put(config.getName(), config);
     }
 
+    public IndexingStatus getStatusByCrawlId(UUID crawlId) {
+        return null;
+    }
 }

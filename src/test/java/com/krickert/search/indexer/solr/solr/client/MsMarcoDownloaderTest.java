@@ -2,6 +2,7 @@ package com.krickert.search.indexer.solr.solr.client;
 
 import com.krickert.search.indexer.solr.client.MsMarcoDownloader;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -17,11 +18,17 @@ public class MsMarcoDownloaderTest {
 
     @Mock
     private MsMarcoDownloader msMarcoDownloader;
+    AutoCloseable mocks;
 
     @BeforeEach
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
-        when(msMarcoDownloader.getSolrQueue()).thenReturn(new LinkedBlockingQueue<SolrInputDocument>(10_000_000));
+        this.mocks = MockitoAnnotations.openMocks(this);
+        when(msMarcoDownloader.getSolrQueue()).thenReturn(new LinkedBlockingQueue<>(10_000_000));
+    }
+
+    @AfterEach
+    public void tearDown() throws Exception {
+        this.mocks.close();
     }
 
     @Test
