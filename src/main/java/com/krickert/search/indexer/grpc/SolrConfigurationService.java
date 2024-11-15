@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SolrConfigurationService extends SolrConfigurationServiceImplBase {
 
     // ConcurrentHashMap to store the configurations
-    private Map<String, SolrConfig> configurations = new ConcurrentHashMap<>();
+    private final Map<String, SolrConfig> configurations = new ConcurrentHashMap<>();
 
     @Override
     public void getSolrConfiguration(GetSolrConfigurationRequest request, StreamObserver<SolrConfig> responseObserver) {

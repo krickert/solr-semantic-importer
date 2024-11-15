@@ -119,7 +119,7 @@ public class ProtobufToSolrSchemaTest {
 
             StringWriter writer = new StringWriter();
             transformer.transform(new DOMSource(doc), new StreamResult(writer));
-            System.out.println(writer.toString());
+            System.out.println(writer);
         } catch (TransformerException e) {
             throw new RuntimeException(e);
         }

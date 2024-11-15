@@ -114,7 +114,7 @@ public class InlineDocumentListener implements DocumentListener {
         return fieldData;
     }
 
-    @Retryable(attempts = "3", delay = "1s", multiplier = "2.0", includes = {io.grpc.StatusRuntimeException.class})
+    @Retryable(multiplier = "2.0", includes = {io.grpc.StatusRuntimeException.class})
     protected EmbeddingsVectorReply getEmbeddingsVectorReply(String fieldData) {
         return embeddingServiceBlockingStub.createEmbeddingsVector(EmbeddingsVectorRequest.newBuilder().setText(fieldData).build());
     }

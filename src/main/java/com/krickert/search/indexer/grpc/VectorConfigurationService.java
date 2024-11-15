@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class VectorConfigurationService extends VectorConfigServiceGrpc.VectorConfigServiceImplBase {
 
     // ConcurrentHashMap to store the configurations
-    private Map<String, VectorConfig> configurations = new ConcurrentHashMap<>();
+    private final Map<String, VectorConfig> configurations = new ConcurrentHashMap<>();
 
     @Override
     public void getVectorConfig(GetVectorConfigRequest request, StreamObserver<VectorConfig> responseObserver) {

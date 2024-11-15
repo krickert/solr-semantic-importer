@@ -257,14 +257,10 @@ public class IndexingTracker {
 
     // Helper functions
     public synchronized float getPercentComplete(TaskType taskType) {
-        switch (taskType) {
-            case MAIN:
-                return mainTaskStatus.getPercentComplete();
-            case VECTOR:
-                return vectorTaskStatus.getPercentComplete();
-            default:
-                throw new IllegalArgumentException("Unknown task type: " + taskType);
-        }
+        return switch (taskType) {
+            case MAIN -> mainTaskStatus.getPercentComplete();
+            case VECTOR -> vectorTaskStatus.getPercentComplete();
+        };
     }
 
     public synchronized float getAverageDocsPerSecond(TaskType taskType) {
@@ -288,6 +284,6 @@ public class IndexingTracker {
     }
 
     public enum TaskType {
-        MAIN, VECTOR;
+        MAIN, VECTOR
     }
 }

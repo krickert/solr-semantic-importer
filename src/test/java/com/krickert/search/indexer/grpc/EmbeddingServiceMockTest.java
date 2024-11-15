@@ -11,7 +11,7 @@ public class EmbeddingServiceMockTest {
 
     @Test
     void testMock() {
-        EmbeddingServiceGrpc.EmbeddingServiceBlockingStub mockStub = new EmbeddingServiceMock().createMock();
+        EmbeddingServiceGrpc.EmbeddingServiceBlockingStub mockStub = EmbeddingServiceMock.createMock();
 
         // Test createEmbeddingsVector
         EmbeddingsVectorRequest vectorRequest = EmbeddingsVectorRequest.newBuilder()

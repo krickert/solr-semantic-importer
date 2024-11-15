@@ -2,8 +2,6 @@ package com.krickert.search.indexer.grpc;
 
 import com.github.javafaker.Faker;
 import com.krickert.search.service.*;
-import io.micronaut.context.annotation.Bean;
-import io.micronaut.context.annotation.Factory;
 
 import java.lang.reflect.Method;
 import java.security.SecureRandom;
@@ -14,13 +12,13 @@ import static org.mockito.Mockito.*;
 
 public class ChunkServiceMock {
 
-    private final Faker faker = new Faker();
     private final Random random = new SecureRandom();
     private final List<Method> fakerMethods = new ArrayList<>();
     private final Map<Method, Object> methodCategoryMap = new HashMap<>();
 
     public ChunkServiceMock() {
         // List of all Faker objects with their corresponding method names
+        Faker faker = new Faker();
         List<Object> fakerCategories = List.of(
                 faker.ancient(), faker.app(), faker.artist(), faker.avatar(), faker.aviation(), faker.lorem(),
                 faker.music(), faker.name(), faker.number(), faker.internet(), faker.phoneNumber(), faker.pokemon(),
@@ -84,7 +82,7 @@ public class ChunkServiceMock {
         // Add up to the last 3 words from the previous chunk
         if (!lastChunkWords.isEmpty()) {
             for (int i = 0; i < Math.min(3, lastChunkWords.size()); i++) {
-                if (words.length() > 0) words.append(" ");
+                if (!words.isEmpty()) words.append(" ");
                 words.append(lastChunkWords.get(i));
                 currentWords.add(lastChunkWords.get(i));
             }
@@ -99,7 +97,7 @@ public class ChunkServiceMock {
             // Tokenize the output into words
             StringTokenizer tokenizer = new StringTokenizer(output);
             while (tokenizer.hasMoreTokens() && wordCount < numberOfWords) {
-                if (words.length() > 0) words.append(" ");
+                if (!words.isEmpty()) words.append(" ");
                 words.append(tokenizer.nextToken());
                 wordCount++;
             }
@@ -108,9 +106,7 @@ public class ChunkServiceMock {
         // Save the last 3 words for the next chunk
         lastChunkWords.clear();
         String[] splittedWords = words.toString().split(" ");
-        for (int i = Math.max(0, splittedWords.length - 3); i < splittedWords.length; i++) {
-            lastChunkWords.add(splittedWords[i]);
-        }
+        lastChunkWords.addAll(Arrays.asList(splittedWords).subList(Math.max(0, splittedWords.length - 3), splittedWords.length));
 
         return words.toString();
     }
