@@ -48,7 +48,7 @@ public class VectorConfigOneWayMappingIntegrationTest {
         assertEquals(300, grpcConfig.getChunkOptions().getLength());
         assertEquals("mini-LM", grpcConfig.getEmbeddingModel().getEmbeddingModel());
         assertEquals("body-vectors", grpcConfig.getDestinationCollection());
-        assertEquals("body-chunk-vector", grpcConfig.getChunkFieldVectorName());
+        assertEquals("chunk-vector", grpcConfig.getChunkFieldVectorName());
         assertEquals(SimilarityFunction.COSINE, grpcConfig.getSimilarityFunction());
         assertEquals(16, grpcConfig.getHnswOptions().getHnswMaxConnections());
         assertEquals(100, grpcConfig.getHnswOptions().getHnswBeamWidth());

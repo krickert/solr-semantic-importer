@@ -47,7 +47,7 @@ public class IndexerConfigurationTest {
         SolrConfiguration sourceConfig = indexerConfiguration.getSourceSolrConfiguration();
         assertNotNull(sourceConfig);
         assertEquals("7.7.3", sourceConfig.getVersion());
-        assertEquals("source_collection", sourceConfig.getCollection());
+        assertEquals("source-collection", sourceConfig.getCollection());
         assertEquals(2, sourceConfig.getFilters().size());
         assertThat(sourceConfig.getFilters()).containsExactlyInAnyOrderElementsOf(List.of("-id:*.csv", "title:*"));
 
@@ -67,9 +67,9 @@ public class IndexerConfigurationTest {
         SolrConfiguration destConfig = indexerConfiguration.getDestinationSolrConfiguration();
         assertNotNull(destConfig);
         assertEquals("9.6.1", destConfig.getVersion());
-        assertEquals("destination_collection", destConfig.getCollection());
-        assertEquals("classpath:semantic_example.zip", destConfig.getCollectionCreation().getCollectionConfigFile());
-        assertEquals("semantic_example", destConfig.getCollectionCreation().getCollectionConfigName());
+        assertEquals("destination-collection", destConfig.getCollection());
+        assertEquals("classpath:semantic-example.zip", destConfig.getCollectionCreation().getCollectionConfigFile());
+        assertEquals("semantic-example", destConfig.getCollectionCreation().getCollectionConfigName());
         assertEquals(1, destConfig.getCollectionCreation().getNumberOfShards());
         assertEquals(2, destConfig.getCollectionCreation().getNumberOfReplicas());
 
@@ -119,12 +119,12 @@ public class IndexerConfigurationTest {
         assertEquals(300, bodyConfig.getChunkSize());
         assertEquals("mini-LM", bodyConfig.getModel());
         assertEquals("body-vectors", bodyConfig.getDestinationCollection());
-        assertEquals("body-chunk-vector", bodyConfig.getFieldVectorName());
+        assertEquals("chunk-vector", bodyConfig.getFieldVectorName());
         assertEquals("cosine", bodyConfig.getSimilarityFunction());
         assertEquals(16, bodyConfig.getHnswMaxConnections());
         assertEquals(100, bodyConfig.getHnswBeamWidth());
         assertEquals("classpath:default-chunk-config.zip", bodyConfig.getCollectionCreation().getCollectionConfigFile());
-        assertEquals("vector_config", bodyConfig.getCollectionCreation().getCollectionConfigName());
+        assertEquals("vector-config", bodyConfig.getCollectionCreation().getCollectionConfigName());
         assertEquals(1, bodyConfig.getCollectionCreation().getNumberOfShards());
         assertEquals(2, bodyConfig.getCollectionCreation().getNumberOfReplicas());
     }

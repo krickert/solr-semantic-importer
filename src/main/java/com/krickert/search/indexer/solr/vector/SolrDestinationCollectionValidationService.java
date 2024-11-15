@@ -67,12 +67,12 @@ public class SolrDestinationCollectionValidationService {
             HealthService healthService,
             VectorFieldValidator vectorFieldValidator) {
         checkNotNull(solrClientService);
-        this.indexerConfiguration = indexerConfiguration;
-        this.solrAdminActions = solrAdminActions;
-        this.embeddingServiceBlockingStub = embeddingServiceBlockingStub;
+        this.indexerConfiguration = checkNotNull(indexerConfiguration);
+        this.solrAdminActions = checkNotNull(solrAdminActions);
+        this.embeddingServiceBlockingStub = checkNotNull(embeddingServiceBlockingStub);
         this.healthService = checkNotNull(healthService);
         this.dimensionality = initializeDimensionality();
-        this.vectorFieldValidator = vectorFieldValidator;
+        this.vectorFieldValidator = checkNotNull(vectorFieldValidator);
     }
 
     private Integer initializeDimensionality() {

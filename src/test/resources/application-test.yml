@@ -18,14 +18,10 @@ openapi:
     - /api/solr-admin
     - /api/config
 
-solr9-test-port: ${random.port}
-solr7-test-port: ${random.port}
 indexer-manager:
   max-history-size: 100
 
 indexer:
-  vector-grpc-channel: "localhost:${grpc-test-client-config.vectorizer.grpc-test-port}"
-  chunker-grpc-channel: "localhost:${grpc-test-client-config.chunker.grpc-test-port}"
   loop-check-sleep-time-seconds: 3 #time in between loops to complete. if the document count that is processed and sent to solr is not incremented, it will wait for this amount of time to give a warning that we can have a "hung" crawl
   loop-max-warnings: 5 #number of loops that the indexer will try before "giving up" and marking the crawl as failed/incomplete.  after this amount of loops, the crawl will stop.
   vector-batch-size: 2 #do not change this unless you know what it's for because it will crash your system if it can't handle the load
@@ -36,7 +32,7 @@ indexer:
 solr-config:
   source:
     version: 7.7.3
-    collection: source_collection
+    collection: source-collection
     filters: #these filters are added each as an "fq" query for solr.
       - "-id:*.csv" #ignore csv
       - "title:*" #only documents with titles
@@ -51,10 +47,10 @@ solr-config:
       pagination-size: 100
   destination:
     version: 9.6.1
-    collection: destination_collection
+    collection: destination-collection
     collection-creation:
-      collection-config-file: "classpath:semantic_example.zip"
-      collection-config-name: semantic_example
+      collection-config-file: "classpath:semantic-example.zip"
+      collection-config-name: semantic-example
       number-of-shards: 1
       number-of-replicas: 2
     connection:
@@ -93,13 +89,13 @@ vector-config:
     chunk-size: 300
     model: mini-LM
     destination-collection: body-vectors
-    field-vector-name: body-chunk-vector
+    field-vector-name: chunk-vector
     similarity-function: cosine #cosine, dot_product, or euclidean.  Defaults to dot_product
     hnsw-max-connections: 16 #if not filled out, this will default to 16
     hnsw-beam-width: 100 #if not filled out, this will default to 100
     collection-creation:
       collection-config-file: "classpath:default-chunk-config.zip"
-      collection-config-name: vector_config
+      collection-config-name: vector-config
       number-of-shards: 1
       number-of-replicas: 2
 
@@ -109,7 +105,7 @@ vector-config:
     chunk-size: 300
     model: mini-LM
     destination-collection: ${solr-config.destination.collection}
-    field-vector-name: body-chunk-vector
+    field-vector-name: chunk-vector
     similarity-function: cosine #cosine, dot_product, or euclidean.  Defaults to dot_product
     hnsw-max-connections: 16 #if not filled out, this will default to 16
     hnsw-beam-width: 100 #if not filled out, this will default to 100

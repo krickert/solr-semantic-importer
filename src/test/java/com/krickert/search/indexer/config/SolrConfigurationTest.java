@@ -23,7 +23,7 @@ class SolrConfigurationTest {
         assertNotNull(configs.get("source"));
         SolrConfiguration source = configs.get("source");
         assertEquals("7.7.3", source.getVersion());
-        assertEquals("source_collection", source.getCollection());
+        assertEquals("source-collection", source.getCollection());
         Collection<String> filters = source.getFilters();
         assertNotNull(filters);
         assertEquals(2, filters.size());
@@ -47,12 +47,12 @@ class SolrConfigurationTest {
         SolrConfiguration destination = configs.get("destination");
         assertNotNull(destination);
         assertEquals("9.6.1", destination.getVersion());
-        assertEquals("destination_collection", destination.getCollection());
+        assertEquals("destination-collection", destination.getCollection());
 
         SolrConfiguration.SolrCollectionCreationConfig collectionCreation = destination.getCollectionCreation();
         assertNotNull(collectionCreation);
-        assertEquals("classpath:semantic_example.zip", collectionCreation.getCollectionConfigFile());
-        assertEquals("semantic_example", collectionCreation.getCollectionConfigName());
+        assertEquals("classpath:semantic-example.zip", collectionCreation.getCollectionConfigFile());
+        assertEquals("semantic-example", collectionCreation.getCollectionConfigName());
         assertEquals(1, collectionCreation.getNumberOfShards());
         assertEquals(2, collectionCreation.getNumberOfReplicas());
 

@@ -18,7 +18,7 @@ public class HealthService {
 
     @Inject
     public HealthService(@Named("vectorEmbeddingService") EmbeddingServiceGrpc.EmbeddingServiceBlockingStub vectorEmbeddingService,
-                         ChunkServiceGrpc.ChunkServiceBlockingStub chunkService) {
+                         @Named("vectorChunkerService") ChunkServiceGrpc.ChunkServiceBlockingStub chunkService) {
         this.embeddingService = vectorEmbeddingService;
         this.chunkService = chunkService;
         log.info("Set up the chunking and embedding service managed channels.");

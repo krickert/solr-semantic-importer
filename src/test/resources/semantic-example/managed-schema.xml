@@ -1,0 +1,143 @@
+<?xml version="1.0" ?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+<schema name="semantic_simple" version="1.0">
+  <!-- If you don't use child/nested documents, then you should remove the next two fields:  -->
+  <!-- for nested documents (minimal; points to root document) -->
+  <field name="_root_" type="string" indexed="true" stored="false" docValues="false" />
+  <!-- for nested documents (relationship tracking) -->
+  <field name="_nest_path_" type="_nest_path_" /><fieldType name="_nest_path_" class="solr.NestPathField" />
+
+  <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="384" stored="false" omitNorms="true"/>
+  <fieldType name="long" class="org.apache.solr.schema.LongPointField" docValues="true" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="double" class="org.apache.solr.schema.DoublePointField" docValues="true" omitNorms="true" positionIncrementGap="0"/>
+
+  <!-- basic text field -->
+  <fieldType name="text" class="solr.TextField">
+    <analyzer>
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+  </fieldType>
+  <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100" multiValued="true">
+    <analyzer type="index">
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.StopFilterFactory" words="stopwords.txt" ignoreCase="true"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.StopFilterFactory" words="stopwords.txt" ignoreCase="true"/>
+      <filter class="solr.SynonymGraphFilterFactory" expand="true" ignoreCase="true" synonyms="synonyms.txt"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+  </fieldType>
+  <fieldType name="point" class="solr.PointType" subFieldSuffix="_d" dimension="2"/>
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true" docValues="true"/>
+  <fieldType name="strings" class="solr.StrField" sortMissingLast="true" docValues="true" multiValued="true"/>
+
+  <!-- boolean type: "true" or "false" -->
+  <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
+  <fieldType name="booleans" class="solr.BoolField" sortMissingLast="true" multiValued="true"/>
+  <!--
+    Numeric field types that index values using KD-trees.
+    Point fields don't support FieldCache, so they must have docValues="true" if needed for sorting, faceting, functions, etc.
+  -->
+  <fieldType name="pint" class="solr.IntPointField" docValues="true"/>
+  <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
+  <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
+  <fieldType name="pdouble" class="solr.DoublePointField" docValues="true"/>
+
+  <fieldType name="pints" class="solr.IntPointField" docValues="true" multiValued="true"/>
+  <fieldType name="pfloats" class="solr.FloatPointField" docValues="true" multiValued="true"/>
+  <fieldType name="plongs" class="solr.LongPointField" docValues="true" multiValued="true"/>
+  <fieldType name="pdoubles" class="solr.DoublePointField" docValues="true" multiValued="true"/>
+  <fieldType name="random" class="solr.RandomSortField" indexed="true"/>
+
+  <!-- since fields of this type are by default not stored or indexed,
+     any data added to them will be ignored outright.  -->
+  <fieldType name="ignored" stored="false" indexed="false" multiValued="true" class="solr.StrField" />
+
+  <!-- The format for this date field is of the form 1995-12-31T23:59:59Z, and
+       is a more restricted form of the canonical representation of dateTime
+       http://www.w3.org/TR/xmlschema-2/#dateTime
+       The trailing "Z" designates UTC time and is mandatory.
+       Optional fractional seconds are allowed: 1995-12-31T23:59:59.999Z
+       All other components are mandatory.
+
+       Expressions can also be used to denote calculations that should be
+       performed relative to "NOW" to determine the value, ie...
+
+             NOW/HOUR
+                ... Round to the start of the current hour
+             NOW-1DAY
+                ... Exactly 1 day prior to now
+             NOW/DAY+6MONTHS+3DAYS
+                ... 6 months and 3 days in the future from the start of
+                    the current day
+
+    -->
+  <!-- KD-tree versions of date fields -->
+  <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
+  <fieldType name="pdates" class="solr.DatePointField" docValues="true" multiValued="true"/>
+
+  <!--Binary data type. The data should be sent/retrieved in as Base64 encoded Strings -->
+  <fieldType name="binary" class="solr.BinaryField"/>
+
+  <!--
+  RankFields can be used to store scoring factors to improve document ranking. They should be used
+  in combination with RankQParserPlugin.
+  (experimental)
+  -->
+  <fieldType name="rank" class="solr.RankField"/>
+
+  <!-- solr.TextField allows the specification of custom text analyzers
+       specified as a tokenizer and a list of token filters. Different
+       analyzers may be specified for indexing and querying.
+
+       The optional positionIncrementGap puts space between multiple fields of
+       this type on the same document, with the purpose of preventing false phrase
+       matching across fields.
+
+       For more info on customizing your analyzer chain, please see
+       https://solr.apache.org/guide/solr/latest/indexing-guide/document-analysis.html#using-analyzers-tokenizers-and-filters
+   -->
+
+  <!-- One can also specify an existing Analyzer class that has a
+       default constructor via the class attribute on the analyzer element.
+       Example:
+  <fieldType name="text_greek" class="solr.TextField">
+    <analyzer class="org.apache.lucene.analysis.el.GreekAnalyzer"/>
+  </fieldType>
+  -->
+  <uniqueKey>id</uniqueKey>
+  <field name="id" type="string" multiValued="false" indexed="true" required="true" stored="true"/>
+  <field name="crawl_id" type="string" multiValued="false" indexed="true" required="true" stored="true"/>
+  <field name="title" type="text_general" multiValued="false"/>
+  <field name="body" type="text_general" multiValued="false"/>
+  <field name="body_paragraphs" type="text_general" multiValued="true"/>
+  <field name="creation_date" type="pdate" multiValued="false"/>
+  <field name="crawl_date" type="pdate" multiValued="false"/>
+  <field name="custom_data_wiki_metadata_date_parsed" type="text_general" multiValued="false"/>
+  <field name="custom_data_wiki_metadata_dump_date" type="pdate" multiValued="false"/>
+  <field name="custom_data_wiki_metadata_namespace" type="string" multiValued="false"/>
+  <field name="custom_data_wiki_metadata_wiki_text" type="text_general" multiValued="false"/>
+  <field name="document_type" type="string" multiValued="false"/>
+  <field name="revision_id" type="plong" multiValued="false"/>
+  <field name="title_vector" type="knn_vector" indexed="true" stored="true" multiValued="false"/>
+  <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
+</schema>

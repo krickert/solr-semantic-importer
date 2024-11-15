@@ -1,24 +1,24 @@
 package com.krickert.search.indexer.grpc;
 
+import com.krickert.search.indexer.test.TestContainersManager;
 import com.krickert.search.service.ChunkServiceGrpc;
 import com.krickert.search.service.EmbeddingServiceGrpc;
-import io.micronaut.context.ApplicationContext;
+import io.micronaut.context.env.Environment;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@MicronautTest(environments = "test")
+@MicronautTest(environments = Environment.TEST)
 class ClientGrpcServiceTest {
 
     @Inject
-    ClientTestContainers clientTestContainers;
+    TestContainersManager testContainersManager;
 
     @Inject
-    ApplicationContext context;
+    TestClients testClients;
 
     @Inject
     @Named("inlineEmbeddingService")
@@ -28,12 +28,13 @@ class ClientGrpcServiceTest {
     @Named("vectorEmbeddingService")
     EmbeddingServiceGrpc.EmbeddingServiceBlockingStub vectorEmbeddingService;
 
-    private ChunkServiceGrpc.ChunkServiceBlockingStub chunkServiceBlockingStub;
+    @Inject
+    @Named("inlineChunkerService")
+    ChunkServiceGrpc.ChunkServiceBlockingStub inlineChunkerService;
 
-    @BeforeEach
-    void setup() {
-        this.chunkServiceBlockingStub = context.getBean(ChunkServiceGrpc.ChunkServiceBlockingStub.class);
-    }
+    @Inject
+    @Named("vectorChunkerService")
+    ChunkServiceGrpc.ChunkServiceBlockingStub vectorChunkerService;
 
     @Test
     void testInlineEmbeddingService() {
@@ -46,7 +47,12 @@ class ClientGrpcServiceTest {
     }
 
     @Test
-    void testChunkService() {
-        assertNotNull(chunkServiceBlockingStub, "ChunkServiceBlockingStub should not be null");
+    void testInlineChunkerService() {
+        assertNotNull(inlineChunkerService, "inlineChunkerService should not be null");
+    }
+
+    @Test
+    void testVectorChunkerService() {
+        assertNotNull(vectorChunkerService, "vectorChunkerService should not be null");
     }
 }

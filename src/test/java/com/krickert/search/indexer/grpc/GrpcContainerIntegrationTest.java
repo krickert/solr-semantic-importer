@@ -1,5 +1,6 @@
 package com.krickert.search.indexer.grpc;
 
+import com.krickert.search.indexer.test.TestContainersManager;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Assertions;
@@ -14,13 +15,13 @@ import java.util.Map;
 public class GrpcContainerIntegrationTest {
 
     @Inject
-    ClientTestContainers clientTestContainers;
+    TestContainersManager testContainersManager;
 
     @Test
     void test() {
-        Assertions.assertNotNull(clientTestContainers);
-        for (String containerName : clientTestContainers.getContainers().keySet()) {
-            GenericContainer<?> container = clientTestContainers.getContainers().get(containerName);
+        Assertions.assertNotNull(testContainersManager);
+        for (String containerName : testContainersManager.getContainers().keySet()) {
+            GenericContainer<?> container = testContainersManager.getContainers().get(containerName);
             Assertions.assertNotNull(container);
             Assertions.assertTrue(container.isRunning());
             Assertions.assertTrue(container.isCreated());

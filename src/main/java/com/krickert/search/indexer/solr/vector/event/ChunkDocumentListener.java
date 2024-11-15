@@ -5,13 +5,15 @@ import com.krickert.search.indexer.config.VectorConfig;
 import com.krickert.search.indexer.solr.SchemaConstants;
 import com.krickert.search.indexer.solr.client.SolrClientService;
 import com.krickert.search.indexer.tracker.IndexingTracker;
+import com.krickert.search.service.ChunkServiceGrpc;
+import com.krickert.search.service.EmbeddingServiceGrpc;
+import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.*;
 
@@ -28,17 +30,15 @@ public class ChunkDocumentListener implements DocumentListener {
 
     public ChunkDocumentListener(IndexerConfiguration indexerConfiguration,
                                  SolrClientService solrClientService,
-                                 IndexingTracker indexingTracker, ChunkDocumentCreator chunkDocumentCreator) {
+                                 IndexingTracker indexingTracker,
+                                 @Named("vectorEmbeddingService") EmbeddingServiceGrpc.EmbeddingServiceBlockingStub vectorEmbeddingService,
+                                 @Named("vectorChunkerService") ChunkServiceGrpc.ChunkServiceBlockingStub chunkingService) {
         this.chunkVectorConfig = indexerConfiguration.getChunkVectorConfig();
         this.vectorSolrClient = solrClientService.vectorConcurrentClient();
         this.indexingTracker = indexingTracker;
-        this.chunkDocumentCreator = chunkDocumentCreator;
+        this.chunkDocumentCreator = new ChunkDocumentCreator(chunkingService, vectorEmbeddingService, 3);
         Integer vectorBatchSize = indexerConfiguration.getIndexerConfigurationProperties().getVectorBatchSize();
-        if (vectorBatchSize == null || vectorBatchSize < 1) {
-            this.batchSize = DEFAULT_BATCH_SIZE;
-        } else {
-            this.batchSize = vectorBatchSize;
-        }
+        this.batchSize = vectorBatchSize == null || vectorBatchSize < 1 ? DEFAULT_BATCH_SIZE : vectorBatchSize;
         log.info("Batch size for the chunk listener is set to {}", this.batchSize);
     }
 
@@ -50,7 +50,15 @@ public class ChunkDocumentListener implements DocumentListener {
 
         String origDocId = document.getFieldValue(SchemaConstants.ID).toString();
 
-        chunkVectorConfig.forEach((fieldName, vectorConfig) -> processField(document, fieldName, vectorConfig, origDocId));
+        chunkVectorConfig.forEach((fieldName, vectorConfig) -> {
+            try {
+                processField(new ChunkDocumentRequest(document, fieldName, vectorConfig, origDocId));
+            } catch (RuntimeException e) {
+                log.error("could not process document with id {} due to error: {}", origDocId, e.getMessage(), e);
+                indexingTracker.vectorDocumentFailed();
+            }
+        }
+  );
     }
 
     private void assertRequiredFieldsPresent(SolrInputDocument document) {
@@ -62,33 +70,32 @@ public class ChunkDocumentListener implements DocumentListener {
         }
     }
 
-    private void processField(SolrInputDocument document, String fieldName, VectorConfig vectorConfig, String origDocId) {
-        Object fieldValue = document.getFieldValue(fieldName);
+    private void processField(ChunkDocumentRequest request) {
+        Object fieldValue = request.getDocument().getFieldValue(request.getFieldName());
 
         if (fieldValue == null) {
-            log.warn("Field '{}' is null for document with ID '{}'. Skipping processing for this field.", fieldName, origDocId);
+            log.warn("Field '{}' is null for document with ID '{}'. Skipping processing for this field.", request.getFieldName(), request.getOrigDocId());
             indexingTracker.vectorDocumentProcessed();
             return;
         }
-        String fieldData = fieldValue.toString();
-        String crawlId = document.getFieldValue(SchemaConstants.CRAWL_ID).toString();
-        Object dateCreated = document.getFieldValue(SchemaConstants.CRAWL_DATE);
-        processChunkField(fieldName, vectorConfig, fieldData, origDocId, crawlId, dateCreated);
+        request.setFieldData(fieldValue.toString());
+        request.setCrawlId(request.getDocument().getFieldValue(SchemaConstants.CRAWL_ID).toString());
+        request.setDateCreated(request.getDocument().getFieldValue(SchemaConstants.CRAWL_DATE));
+        processChunkField(request);
     }
 
-    private void processChunkField(String fieldName, VectorConfig vectorConfig, String fieldData, String origDocId, String crawlId, Object dateCreated) {
-        List<SolrInputDocument> docs = chunkDocumentCreator.getChunkedSolrInputDocuments(fieldName, vectorConfig, fieldData, origDocId,
-                crawlId, dateCreated);
+    private void processChunkField(ChunkDocumentRequest request) {
+        List<SolrInputDocument> docs = chunkDocumentCreator.getChunkedSolrInputDocuments(request);
         boolean hasError = false;
         for (int i = 0; i < docs.size(); i += batchSize) {
             int endIndex = Math.min(i + batchSize, docs.size());
             List<SolrInputDocument> chunkDocuments = docs.subList(i, endIndex);
             try {
-                log.info("Adding chunks for parent id {} with {} documents to the {} collection with type VECTOR and document chunk batch {}", origDocId, chunkDocuments.size(), vectorConfig.getDestinationCollection(), i);
-                vectorSolrClient.add(vectorConfig.getDestinationCollection(), chunkDocuments);
-                log.info("Addded {} documents to the {} collection with type VECTOR and document chunk batch {}", chunkDocuments.size(), vectorConfig.getDestinationCollection(), i);
+                log.info("Adding chunks for parent id {} with {} documents to the {} collection with type VECTOR and document chunk batch {}", request.getOrigDocId(), chunkDocuments.size(), request.getVectorConfig().getDestinationCollection(), i);
+                vectorSolrClient.add(request.getVectorConfig().getDestinationCollection(), chunkDocuments);
+                log.info("Added {} documents to the {} collection with type VECTOR and document chunk batch {}", chunkDocuments.size(), request.getVectorConfig().getDestinationCollection(), i);
             } catch (SolrServerException | IOException e) {
-                log.error("Could not process document with ID {} due to error: {}", origDocId, e.getMessage());
+                log.error("Could not process document with ID {} due to error: {}", request.getOrigDocId(), e.getMessage());
                 hasError = true;
             }
         }
@@ -98,7 +105,4 @@ public class ChunkDocumentListener implements DocumentListener {
             indexingTracker.vectorDocumentProcessed();
         }
     }
-
-
-
 }

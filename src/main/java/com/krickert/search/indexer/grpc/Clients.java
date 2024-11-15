@@ -47,12 +47,23 @@ public class Clients {
     }
 
     @Bean
-    @Named("chunkService")
-    ChunkServiceGrpc.ChunkServiceBlockingStub chunkServiceBlockingStub(
+    @Named("vectorChunkerService")
+    ChunkServiceGrpc.ChunkServiceBlockingStub vectorChunkServiceBlockingStub(
             @GrpcChannel("${indexer.chunker-grpc-channel}")
             ManagedChannel channel) {
         return ChunkServiceGrpc.newBlockingStub(
                 channel
         );
     }
+
+    @Bean
+    @Named("inlineChunkerService")
+    ChunkServiceGrpc.ChunkServiceBlockingStub inlineChunkServiceBlockingStub(
+            @GrpcChannel("${indexer.chunker-grpc-channel}")
+            ManagedChannel channel) {
+        return ChunkServiceGrpc.newBlockingStub(
+                channel
+        );
+    }
+
 }

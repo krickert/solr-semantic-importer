@@ -1,6 +1,6 @@
 package com.krickert.search.indexer.config;
 
-import com.krickert.search.indexer.solr.SolrTestContainers;
+import com.krickert.search.indexer.test.TestContainersManager;
 import io.micronaut.context.annotation.Bean;
 import io.micronaut.context.annotation.Factory;
 import io.micronaut.context.annotation.Replaces;
@@ -10,6 +10,8 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.krickert.search.indexer.test.TestContainersManager.*;
+
 @Factory
 public class SolrConfigurationModifier {
 
@@ -17,13 +19,22 @@ public class SolrConfigurationModifier {
     private final IndexerConfiguration originalConfiguration;
     private final String solr9Url;
 
-    public SolrConfigurationModifier(IndexerConfiguration originalConfiguration, SolrTestContainers solrTestContainers) {
+    public SolrConfigurationModifier(IndexerConfiguration originalConfiguration, TestContainersManager testContainersManager) {
         this.originalConfiguration = originalConfiguration;
-        String solr7Url = "http://" + solrTestContainers.getContainer7().getHost() + ":" + solrTestContainers.getContainer7().getSolrPort() + "/solr";
-        this.solr9Url = "http://" + solrTestContainers.getContainer9().getHost() + ":" + solrTestContainers.getContainer9().getSolrPort() + "/solr";
+        String solr7Url = getSolr7BaseUrl();
+        this.solr9Url = getSolr9BaseUrl();
+
+        // Set system properties for container URLs to be accessible in the tests
+        System.setProperty("solr-config.source.connection.url", solr7Url);
+        System.setProperty("solr-config.destination.connection.url", solr9Url);
+        System.setProperty("indexer.vector-grpc-channel", getVectorizerUrl());
+        System.setProperty("indexer.chunker-grpc-channel", getChunkerUrl());
+
         log.info("setting the configuration so it has:\n\tsolr7Url: {}\n\tsolr9Url: {}", solr7Url, solr9Url);
         originalConfiguration.getSourceSolrConfiguration().getConnection().setUrl(solr7Url);
         originalConfiguration.getDestinationSolrConfiguration().getConnection().setUrl(solr9Url);
+        originalConfiguration.getIndexerConfigurationProperties().setVectorGrpcChannel(getVectorizerUrl());
+        originalConfiguration.getIndexerConfigurationProperties().setChunkerGrpcChannel(getChunkerUrl());
         log.info("Solr testing property setting complete");
     }
 

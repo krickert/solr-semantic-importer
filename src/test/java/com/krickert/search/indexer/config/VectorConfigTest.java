@@ -35,7 +35,7 @@ public class VectorConfigTest {
         assertEquals(300, bodyConfig.getChunkSize());
         assertEquals("mini-LM", bodyConfig.getModel());
         assertEquals("body-vectors", bodyConfig.getDestinationCollection());
-        assertEquals("body-chunk-vector", bodyConfig.getFieldVectorName());
+        assertEquals("chunk-vector", bodyConfig.getFieldVectorName());
         assertEquals("cosine", bodyConfig.getSimilarityFunction());
         assertEquals(16, bodyConfig.getHnswMaxConnections());
         assertEquals(100, bodyConfig.getHnswBeamWidth());

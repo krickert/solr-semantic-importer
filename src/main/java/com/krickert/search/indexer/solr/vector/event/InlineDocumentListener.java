@@ -32,15 +32,16 @@ public class InlineDocumentListener implements DocumentListener {
 
     public InlineDocumentListener(SolrClientService solrClientService,
                                   IndexerConfiguration indexerConfiguration,
-                                  @SuppressWarnings("MnInjectionPoints") @Named("inlineEmbeddingService") EmbeddingServiceGrpc.EmbeddingServiceBlockingStub inlineEmbeddingService,
-                                  IndexingTracker indexingTracker, ChunkDocumentCreator chunkDocumentCreator) {
+                                  @Named("inlineEmbeddingService") EmbeddingServiceGrpc.EmbeddingServiceBlockingStub inlineEmbeddingService,
+                                  @Named("inlineChunkerService") ChunkServiceGrpc.ChunkServiceBlockingStub chunkingService,
+                                  IndexingTracker indexingTracker) {
 
         this.inlineSolrClient =  solrClientService.inlineConcurrentClient();
         this.inlineVectorConfig = indexerConfiguration.getInlineVectorConfig();
         this.embeddingServiceBlockingStub = inlineEmbeddingService;
         this.destinationCollectionName = indexerConfiguration.getDestinationSolrConfiguration().getCollection();
         this.indexingTracker = indexingTracker;
-        this.chunkDocumentCreator = chunkDocumentCreator;
+        this.chunkDocumentCreator = new ChunkDocumentCreator(chunkingService, embeddingServiceBlockingStub, 3);
     }
 
     @Override
@@ -77,7 +78,7 @@ public class InlineDocumentListener implements DocumentListener {
         }
 
         if (vectorConfig.getChunkField()) {
-            //this is a chunk document type.  Everything here will be used to be a child document
+            //this is a chunk document type. Everything here will be used to be a child document
             processChildDocuments(solrInputDocument, fieldName, fieldData, origDocId, vectorConfig);
         } else {
             processInlineFieldData(solrInputDocument, fieldData, vectorConfig);
@@ -100,11 +101,13 @@ public class InlineDocumentListener implements DocumentListener {
 
     private void processChildDocuments(SolrInputDocument solrInputDocument, String fieldName, String fieldData, String origDocId, VectorConfig vectorConfig) {
         String crawlId = solrInputDocument.getFieldValue(SchemaConstants.CRAWL_ID).toString();
-        List<SolrInputDocument> docs = chunkDocumentCreator.getChunkedSolrInputDocuments(fieldName, vectorConfig, fieldData, origDocId,
-                crawlId,null );
+        ChunkDocumentRequest request = new ChunkDocumentRequest(solrInputDocument, fieldName, vectorConfig, origDocId);
+        request.setFieldData(fieldData);
+        request.setCrawlId(crawlId);
+        request.setDateCreated(solrInputDocument.getFieldValue(SchemaConstants.CRAWL_DATE));
+        List<SolrInputDocument> docs = chunkDocumentCreator.getChunkedSolrInputDocuments(request);
         solrInputDocument.addField(vectorConfig.getFieldVectorName(), docs);
     }
-
 
     private String getFinalFieldData(String fieldData, VectorConfig vectorConfig) {
         // Check if the vector config has a valid maximum character limit and truncate if necessary
@@ -118,5 +121,4 @@ public class InlineDocumentListener implements DocumentListener {
     protected EmbeddingsVectorReply getEmbeddingsVectorReply(String fieldData) {
         return embeddingServiceBlockingStub.createEmbeddingsVector(EmbeddingsVectorRequest.newBuilder().setText(fieldData).build());
     }
-
 }

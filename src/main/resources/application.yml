@@ -48,7 +48,7 @@ indexer:
 solr-config:
   source:
     version: 7.7.3
-    collection: source_collection
+    collection: source-collection
     connection:
       url: http://localhost:8983/solr
       authentication:
@@ -58,10 +58,10 @@ solr-config:
         password: dummy_password
   destination:
     version: 9.6.1
-    collection: destination_collection
+    collection: destination-collection
     collection-creation:
-      collection-config-file: "classpath:default_base_config.zip"
-      collection-config-name: semantic_example
+      collection-config-file: "classpath:default-base-config.zip"
+      collection-config-name: semantic-example
       number-of-shards: 1
       number-of-replicas: 2
     connection:
