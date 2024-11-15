@@ -25,6 +25,7 @@ public class ChunkDocumentCreator {
     private final EmbeddingServiceGrpc.EmbeddingServiceBlockingStub embeddingServiceBlockingStub;
     private final int batchSize;
 
+    @SuppressWarnings("MnInjectionPoints")
     @Inject
     public ChunkDocumentCreator(@Named("chunkService") ChunkServiceGrpc.ChunkServiceBlockingStub chunkServiceBlockingStub,
                                 @Named("vectorEmbeddingService") EmbeddingServiceGrpc.EmbeddingServiceBlockingStub embeddingServiceBlockingStub,

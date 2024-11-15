@@ -5,12 +5,10 @@ import com.krickert.search.indexer.config.VectorConfig;
 import com.krickert.search.indexer.solr.SchemaConstants;
 import com.krickert.search.indexer.solr.client.SolrClientService;
 import com.krickert.search.indexer.tracker.IndexingTracker;
-import com.krickert.search.service.*;
 import jakarta.inject.Singleton;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
 import org.apache.solr.common.SolrInputDocument;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
