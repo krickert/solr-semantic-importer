@@ -2,20 +2,22 @@ package com.krickert.search.indexer.solr.vector.event;
 
 import com.krickert.search.indexer.config.IndexerConfiguration;
 import com.krickert.search.indexer.config.VectorConfig;
+import com.krickert.search.indexer.solr.SchemaConstants;
 import com.krickert.search.indexer.solr.client.SolrClientService;
 import com.krickert.search.indexer.tracker.IndexingTracker;
-import com.krickert.search.service.EmbeddingServiceGrpc;
-import com.krickert.search.service.EmbeddingsVectorReply;
-import com.krickert.search.service.EmbeddingsVectorRequest;
+import com.krickert.search.service.*;
 import io.micronaut.retry.annotation.Retryable;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -28,17 +30,19 @@ public class InlineDocumentListener implements DocumentListener {
     private final ConcurrentUpdateHttp2SolrClient inlineSolrClient;
     private final String destinationCollectionName;
     private final IndexingTracker indexingTracker;
+    private final ChunkDocumentCreator chunkDocumentCreator;
 
     public InlineDocumentListener(SolrClientService solrClientService,
                                   IndexerConfiguration indexerConfiguration,
                                   @Named("inlineEmbeddingService") EmbeddingServiceGrpc.EmbeddingServiceBlockingStub inlineEmbeddingService,
-                                  IndexingTracker indexingTracker) {
+                                  IndexingTracker indexingTracker, ChunkDocumentCreator chunkDocumentCreator) {
 
         this.inlineSolrClient =  solrClientService.inlineConcurrentClient();
         this.inlineVectorConfig = indexerConfiguration.getInlineVectorConfig();
         this.embeddingServiceBlockingStub = inlineEmbeddingService;
         this.destinationCollectionName = indexerConfiguration.getDestinationSolrConfiguration().getCollection();
         this.indexingTracker = indexingTracker;
+        this.chunkDocumentCreator = chunkDocumentCreator;
     }
 
     @Override
@@ -47,7 +51,7 @@ public class InlineDocumentListener implements DocumentListener {
         log.info("Processing inline vector for document with ID: {}", origDocId);
         try {
             inlineVectorConfig.forEach((fieldName, vectorConfig) -> {
-                String fieldData = Optional.ofNullable(document.getFieldValue(fieldName))
+                String fieldData = Optional.ofNullable(document.getFieldValue(vectorConfig.getFieldName()))
                         .map(Object::toString)
                         .orElse(null);
                 processInlineDocumentField(document, fieldName, fieldData, origDocId, vectorConfig);
@@ -74,6 +78,15 @@ public class InlineDocumentListener implements DocumentListener {
             return;
         }
 
+        if (vectorConfig.getChunkField()) {
+            //this is a chunk document type.  Everything here will be used to be a child document
+            processChildDocuments(solrInputDocument, fieldName, fieldData, origDocId, vectorConfig);
+        } else {
+            processInlineFieldData(solrInputDocument, fieldData, vectorConfig);
+        }
+    }
+
+    private void processInlineFieldData(SolrInputDocument solrInputDocument, String fieldData, VectorConfig vectorConfig) {
         // Determine the final field data, possibly truncated if it exceeds the maximum allowed characters
         String finalFieldData = getFinalFieldData(fieldData, vectorConfig);
 
@@ -86,6 +99,14 @@ public class InlineDocumentListener implements DocumentListener {
         // Add the embeddings to the Solr input document
         solrInputDocument.addField(vectorFieldName, embeddingsVectorReply.getEmbeddingsList());
     }
+
+    private void processChildDocuments(SolrInputDocument solrInputDocument, String fieldName, String fieldData, String origDocId, VectorConfig vectorConfig) {
+        String crawlId = solrInputDocument.getFieldValue(SchemaConstants.CRAWL_ID).toString();
+        List<SolrInputDocument> docs = chunkDocumentCreator.getChunkedSolrInputDocuments(fieldName, vectorConfig, fieldData, origDocId,
+                crawlId,null );
+        solrInputDocument.addField(vectorConfig.getFieldVectorName(), docs);
+    }
+
 
     private String getFinalFieldData(String fieldData, VectorConfig vectorConfig) {
         // Check if the vector config has a valid maximum character limit and truncate if necessary
