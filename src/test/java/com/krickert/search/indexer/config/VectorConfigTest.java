@@ -40,7 +40,7 @@ public class VectorConfigTest {
         assertEquals(16, bodyConfig.getHnswMaxConnections());
         assertEquals(100, bodyConfig.getHnswBeamWidth());
         assertEquals("classpath:default-chunk-config.zip", bodyConfig.getCollectionCreation().getCollectionConfigFile());
-        assertEquals("vector_config", bodyConfig.getCollectionCreation().getCollectionConfigName());
+        assertEquals("vector-config", bodyConfig.getCollectionCreation().getCollectionConfigName());
         assertEquals(1, bodyConfig.getCollectionCreation().getNumberOfShards());
         assertEquals(2, bodyConfig.getCollectionCreation().getNumberOfReplicas());
     }
