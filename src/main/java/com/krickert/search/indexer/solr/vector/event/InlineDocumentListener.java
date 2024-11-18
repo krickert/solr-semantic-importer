@@ -10,6 +10,7 @@ import io.micronaut.retry.annotation.Retryable;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrInputDocument;
@@ -26,7 +27,7 @@ public class InlineDocumentListener implements DocumentListener {
     private static final Logger log = LoggerFactory.getLogger(InlineDocumentListener.class);
     private final Map<String, VectorConfig> inlineVectorConfig;
     private final EmbeddingServiceGrpc.EmbeddingServiceBlockingStub embeddingServiceBlockingStub;
-    private final Http2SolrClient inlineSolrClient;
+    private final SolrClient inlineSolrClient;
     private final String destinationCollectionName;
     private final IndexingTracker indexingTracker;
     private final ChunkDocumentCreator chunkDocumentCreator;
@@ -38,7 +39,11 @@ public class InlineDocumentListener implements DocumentListener {
                                   IndexingTracker indexingTracker,
                                   IndexerConfiguration indexerConfiguration) {
 
-        this.inlineSolrClient =  solrClientService.inlineSolrClient();
+        Http2SolrClient solrClient = solrClientService.inlineSolrClient();
+        ConcurrentUpdateHttp2SolrClient.Builder updateHttp2SolrClient =
+                new ConcurrentUpdateHttp2SolrClient.Builder(solrClient.getBaseURL(), solrClient, false).withQueueSize(500).withThreadCount(10);
+
+        this.inlineSolrClient =  updateHttp2SolrClient.build();
         this.inlineVectorConfig = indexerConfiguration.getInlineVectorConfig();
         this.embeddingServiceBlockingStub = inlineEmbeddingService;
         this.destinationCollectionName = indexerConfiguration.getDestinationSolrConfiguration().getCollection();

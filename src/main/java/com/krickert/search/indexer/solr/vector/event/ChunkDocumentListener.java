@@ -9,6 +9,7 @@ import com.krickert.search.service.ChunkServiceGrpc;
 import com.krickert.search.service.EmbeddingServiceGrpc;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -24,7 +25,7 @@ public class ChunkDocumentListener implements DocumentListener {
     private static final Logger log = LoggerFactory.getLogger(ChunkDocumentListener.class);
     private static final Integer DEFAULT_BATCH_SIZE = 3;
     private final Map<String, VectorConfig> chunkVectorConfig;
-    private final Http2SolrClient vectorSolrClient;
+    private final SolrClient vectorSolrClient;
     private final IndexingTracker indexingTracker;
     private final Integer batchSize;
     private final ChunkDocumentCreator chunkDocumentCreator;
@@ -36,7 +37,10 @@ public class ChunkDocumentListener implements DocumentListener {
                                  @Named("vectorEmbeddingService") EmbeddingServiceGrpc.EmbeddingServiceBlockingStub vectorEmbeddingService,
                                  @Named("vectorChunkerService") ChunkServiceGrpc.ChunkServiceBlockingStub chunkingService) {
         this.chunkVectorConfig = indexerConfiguration.getChunkVectorConfig();
-        this.vectorSolrClient = solrClientService.vectorSolrClient();
+        Http2SolrClient solrClient = solrClientService.vectorSolrClient();
+        ConcurrentUpdateHttp2SolrClient.Builder updateHttp2SolrClient =
+                new ConcurrentUpdateHttp2SolrClient.Builder(solrClient.getBaseURL(), solrClient, false);
+        this.vectorSolrClient = updateHttp2SolrClient.build();
         this.indexingTracker = indexingTracker;
         this.chunkDocumentCreator = new ChunkDocumentCreator(chunkingService, vectorEmbeddingService, 3);
         Integer vectorBatchSize = indexerConfiguration.getIndexerConfigurationProperties().getVectorBatchSize();
