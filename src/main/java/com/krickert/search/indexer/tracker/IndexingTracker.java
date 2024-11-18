@@ -72,14 +72,17 @@ public class IndexingTracker {
         status.setAverageDocsPerSecond(0);
     }
 
-    public synchronized void startTracking(String indexingId) {
+    public synchronized void startTracking(Long totalDocumentsFound, String crawlId) {
         timeStarted = LocalDateTime.now();
-        initializeStatus(mainTaskStatus, indexingId);
-        initializeStatus(vectorTaskStatus, indexingId);
+        initializeStatus(mainTaskStatus, crawlId, timeStarted);
+        initializeStatus(vectorTaskStatus, crawlId, timeStarted);
+        setTotalDocumentsFound(totalDocumentsFound);
+        updateProgress();
+        log.info("Indexing started with indexing id: {}", crawlId);
     }
 
-    private void initializeStatus(IndexingStatus status, String indexingId) {
-        status.setIndexingId(indexingId);
+    private void initializeStatus(IndexingStatus status, String crawlId, LocalDateTime timeStarted) {
+        status.setIndexingId(crawlId);
         status.setTimeStarted(timeStarted);
         status.setCurrentStatusMessage("started");
         status.setOverallStatus(IndexingStatus.OverallStatus.RUNNING);

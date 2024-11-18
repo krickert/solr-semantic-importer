@@ -53,7 +53,7 @@ public class VectorConfigOneWayMappingIntegrationTest {
         assertEquals(16, grpcConfig.getHnswOptions().getHnswMaxConnections());
         assertEquals(100, grpcConfig.getHnswOptions().getHnswBeamWidth());
         assertEquals("classpath:default-chunk-config.zip", grpcConfig.getCollectionCreation().getCollectionConfigFile());
-        assertEquals("vector_config", grpcConfig.getCollectionCreation().getCollectionConfigName());
+        assertEquals("vector-config", grpcConfig.getCollectionCreation().getCollectionConfigName());
         assertEquals(1, grpcConfig.getCollectionCreation().getNumberOfShards());
         assertEquals(2, grpcConfig.getCollectionCreation().getNumberOfReplicas());
     }

@@ -96,8 +96,7 @@ public class SolrSemanticIndexer implements SemanticIndexer {
         assert totalExpected >= 0;
         log.info("We queried host {} with collection {} and it returned {} documents. We will start tracking this crawl", solr7Host, solrSourceCollection, totalExpected);
         indexingTracker.reset();
-        indexingTracker.startTracking(crawlId.toString());
-        indexingTracker.setTotalDocumentsFound(totalExpected);
+        indexingTracker.startTracking(totalExpected, crawlId.toString());
         long numOfPagesExpected = calculateNumOfPages(totalExpected, paginationSize);
         assert numOfPagesExpected >= 0;
         for (int currentPage = 0; currentPage < numOfPagesExpected; currentPage++) {
