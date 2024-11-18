@@ -14,7 +14,7 @@ public class SolrSourceDocumentPublisher implements SourceSolrDocumentListener {
     private final Sinks.Many<SolrInputDocument> sink;
 
     public SolrSourceDocumentPublisher() {
-        this.sink = Sinks.many().unicast().onBackpressureBuffer();
+        this.sink = Sinks.many().multicast().onBackpressureBuffer(30000, false);
     }
 
     @Override

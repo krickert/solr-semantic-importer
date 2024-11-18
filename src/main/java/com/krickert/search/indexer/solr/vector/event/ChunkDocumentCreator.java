@@ -44,6 +44,7 @@ public final class ChunkDocumentCreator {
 
             EmbeddingsVectorsReply batchReply = getEmbeddingsVectorsReply(chunkBatch);
             docs.addAll(createChunkDocuments(request, batchReply.getEmbeddingsList(), chunkBatch, i));
+
         }
         return docs;
     }
@@ -61,8 +62,11 @@ public final class ChunkDocumentCreator {
                                                         List<String> chunksList, int chunkBatch) {
         List<SolrInputDocument> chunkDocuments = new ArrayList<>(chunksList.size());
 
-        for (int i = 0; i < chunksList.size(); i++) {
-            SolrInputDocument docToAdd = createSolrInputDocument(request, chunksList.get(i), i * (chunkBatch + 1), embeddingsList.get(i).getEmbeddingsList());
+        int chunkNumber = batchSize * chunkBatch;
+        for (int i = 0; i < chunksList.size() ; i++) {
+
+            SolrInputDocument docToAdd = createSolrInputDocument(request, chunksList.get(i), chunkNumber++,
+                    embeddingsList.get(i).getEmbeddingsList());
             chunkDocuments.add(docToAdd);
         }
 
@@ -70,12 +74,14 @@ public final class ChunkDocumentCreator {
     }
 
     public SolrInputDocument createSolrInputDocument(ChunkDocumentRequest request, String chunk, int chunkNumber, Collection<Float> vector) {
-        String docId = request.getOrigDocId() + request.getFieldName() + "#" + StringUtils.leftPad(String.valueOf(chunkNumber), 7, "0");
+        String docId = request.getOrigDocId() + "-" + request.getFieldName() + "#" + StringUtils.leftPad(String.valueOf(chunkNumber), 7,
+                "0");
 
         SolrInputDocument document = new SolrInputDocument();
         document.addField(SchemaConstants.ID, docId);
         document.addField(SchemaConstants.DOC_ID, docId);
         document.addField(SchemaConstants.PARENT_ID, request.getOrigDocId());
+        document.addField(SchemaConstants.PARENT_COLLECTION, request.getParentCollection());
         document.addField(SchemaConstants.CHUNK, chunk);
         document.addField(SchemaConstants.CHUNK_NUMBER, chunkNumber);
         document.addField(request.getVectorConfig().getFieldVectorName(), vector);

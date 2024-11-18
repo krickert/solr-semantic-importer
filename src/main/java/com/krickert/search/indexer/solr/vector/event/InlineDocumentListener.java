@@ -11,6 +11,7 @@ import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,23 +26,25 @@ public class InlineDocumentListener implements DocumentListener {
     private static final Logger log = LoggerFactory.getLogger(InlineDocumentListener.class);
     private final Map<String, VectorConfig> inlineVectorConfig;
     private final EmbeddingServiceGrpc.EmbeddingServiceBlockingStub embeddingServiceBlockingStub;
-    private final ConcurrentUpdateHttp2SolrClient inlineSolrClient;
+    private final Http2SolrClient inlineSolrClient;
     private final String destinationCollectionName;
     private final IndexingTracker indexingTracker;
     private final ChunkDocumentCreator chunkDocumentCreator;
+    private final IndexerConfiguration indexerConfiguration;
 
     public InlineDocumentListener(SolrClientService solrClientService,
-                                  IndexerConfiguration indexerConfiguration,
                                   @Named("inlineEmbeddingService") EmbeddingServiceGrpc.EmbeddingServiceBlockingStub inlineEmbeddingService,
                                   @Named("inlineChunkerService") ChunkServiceGrpc.ChunkServiceBlockingStub chunkingService,
-                                  IndexingTracker indexingTracker) {
+                                  IndexingTracker indexingTracker,
+                                  IndexerConfiguration indexerConfiguration) {
 
-        this.inlineSolrClient =  solrClientService.inlineConcurrentClient();
+        this.inlineSolrClient =  solrClientService.inlineSolrClient();
         this.inlineVectorConfig = indexerConfiguration.getInlineVectorConfig();
         this.embeddingServiceBlockingStub = inlineEmbeddingService;
         this.destinationCollectionName = indexerConfiguration.getDestinationSolrConfiguration().getCollection();
         this.indexingTracker = indexingTracker;
         this.chunkDocumentCreator = new ChunkDocumentCreator(chunkingService, embeddingServiceBlockingStub, 3);
+        this.indexerConfiguration = indexerConfiguration;
     }
 
     @Override
@@ -56,18 +59,18 @@ public class InlineDocumentListener implements DocumentListener {
                 processInlineDocumentField(document, fieldName, fieldData, origDocId, vectorConfig);
             });
         } catch (RuntimeException e) {
-            log.error("could not process document with id {} due to error: {}", origDocId, e.getMessage());
+            log.error("could not process document with id {} due to error: {}", origDocId, e.getMessage(), e);
             indexingTracker.documentFailed();
             return;
         }
         try {
             inlineSolrClient.add(destinationCollectionName, document);
+            indexingTracker.documentProcessed();
         } catch (Exception e) {
-            log.error("could not process document with id {} due to error: {}", origDocId, e.getMessage());
+            log.error("could not process document with id {} due to error: {}", origDocId, e.getMessage(), e);
             indexingTracker.documentFailed();
-            return;
         }
-        indexingTracker.documentProcessed();
+
     }
 
     private void processInlineDocumentField(SolrInputDocument solrInputDocument, String fieldName, String fieldData, String origDocId, VectorConfig vectorConfig) {
@@ -78,6 +81,7 @@ public class InlineDocumentListener implements DocumentListener {
         }
 
         if (vectorConfig.getChunkField()) {
+            log.info("processing embedded documents for doc");
             //this is a chunk document type. Everything here will be used to be a child document
             processChildDocuments(solrInputDocument, fieldName, fieldData, origDocId, vectorConfig);
         } else {
@@ -101,7 +105,8 @@ public class InlineDocumentListener implements DocumentListener {
 
     private void processChildDocuments(SolrInputDocument solrInputDocument, String fieldName, String fieldData, String origDocId, VectorConfig vectorConfig) {
         String crawlId = solrInputDocument.getFieldValue(SchemaConstants.CRAWL_ID).toString();
-        ChunkDocumentRequest request = new ChunkDocumentRequest(solrInputDocument, fieldName, vectorConfig, origDocId);
+        ChunkDocumentRequest request = new ChunkDocumentRequest(solrInputDocument, fieldName, vectorConfig, origDocId,
+                indexerConfiguration.getDestinationSolrConfiguration().getCollection());
         request.setFieldData(fieldData);
         request.setCrawlId(crawlId);
         request.setDateCreated(solrInputDocument.getFieldValue(SchemaConstants.CRAWL_DATE));

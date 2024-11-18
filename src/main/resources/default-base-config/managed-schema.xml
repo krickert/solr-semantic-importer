@@ -119,7 +119,8 @@
     <field name="_root_" type="string" indexed="true" stored="false" docValues="false" />
     <!-- for nested documents (relationship tracking) -->
     <field name="_nest_path_" type="_nest_path_" /><fieldType name="_nest_path_" class="solr.NestPathField" />
-
+    <field name="_nest_parent_" type="string" indexed="true" stored="true" />
+    <field name="crawl-id" type="string" indexed="true" stored="true"/>
     <field name="_text_" type="text_general" indexed="true" stored="false" multiValued="true"/>
 
     <!-- This can be enabled, in case the client does not know what fields may be searched. It isn't enabled by default

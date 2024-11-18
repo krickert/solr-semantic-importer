@@ -10,9 +10,10 @@ public class ChunkDocumentRequest {
     private final String origDocId;
     private String fieldData;
     private String crawlId;
+    private String parentCollection;
     private Object dateCreated;
 
-    public ChunkDocumentRequest(SolrInputDocument document, String fieldName, VectorConfig vectorConfig, String origDocId) {
+    public ChunkDocumentRequest(SolrInputDocument document, String fieldName, VectorConfig vectorConfig, String origDocId, String parentCollection) {
         this.document = document;
         this.fieldName = fieldName;
         this.vectorConfig = vectorConfig;
@@ -57,5 +58,12 @@ public class ChunkDocumentRequest {
 
     public void setDateCreated(Object dateCreated) {
         this.dateCreated = dateCreated;
+    }
+
+    public String getParentCollection() {
+        return parentCollection;
+    }
+    public void setParentCollection(String parentCollection) {
+        this.parentCollection = parentCollection;
     }
 }

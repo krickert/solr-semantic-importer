@@ -452,13 +452,13 @@
   <field name="_version_" type="plong" indexed="false" stored="false"/>
   <field name="chunk-vector" type="chunk-vector_384" indexed="true" stored="true"/>
   <field name="chunk" type="text_general"/>
-  <field name="chunk_number" type="pint"/>
-  <field name="crawl_id" type="string"/>
-  <field name="crawl_date" type="pdate"/>
-  <field name="creation_date" type="pdate"/>
-  <field name="doc_id" type="string"/>
+  <field name="chunk-number" type="pint"/>
+  <field name="crawl-id" type="string"/>
+  <field name="crawl-date" type="pdate"/>
+  <field name="creation-date" type="pdate"/>
+  <field name="doc-id" type="string"/>
   <field name="id" type="string" multiValued="false" indexed="true" required="true" stored="true"/>
-  <field name="parent_collection" type="string"/>
-  <field name="parent_field_name" type="string"/>
-  <field name="parent_id" type="string"/>
+  <field name="parent-collection" type="string"/>
+  <field name="parent-field-name" type="string"/>
+  <field name="parent-id" type="string"/>
 </schema>

@@ -4,6 +4,8 @@ import com.krickert.search.indexer.dto.IndexingStatus;
 import io.micronaut.context.annotation.Value;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -15,7 +17,7 @@ import java.util.stream.Collectors;
 
 @Singleton
 public class IndexingTracker {
-
+    private static final Logger log = LoggerFactory.getLogger(IndexingTracker.class);
     private final IndexingStatus mainTaskStatus = new IndexingStatus();
     private final IndexingStatus vectorTaskStatus = new IndexingStatus();
     private final List<IndexingStatus> indexingHistory = new LinkedList<>();
@@ -177,10 +179,13 @@ public class IndexingTracker {
     }
 
     public void documentFailed() {
+        log.info("DOCUMENT FAILURE IN MAIN DOC");
         documentFailed(TaskType.MAIN);
     }
 
     public void vectorDocumentFailed() {
+        log.info("DOCUMENT FAILURE IN VECTOR DOC");
+
         documentFailed(TaskType.VECTOR);
     }
 

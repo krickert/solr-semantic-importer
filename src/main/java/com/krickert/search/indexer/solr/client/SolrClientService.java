@@ -39,24 +39,6 @@ public class SolrClientService {
         log.info("Destination vector solr client created.");
         return client;
     }
-
-    @Bean
-    @Named("vectorConcurrentClient")
-    public ConcurrentUpdateHttp2SolrClient vectorConcurrentClient() {
-        try {
-            log.info("Creating inlineConcurrentClient bean");
-            String solrUrl = indexerConfiguration.getDestinationSolrConfiguration().getConnection().getUrl();
-            return new ConcurrentUpdateHttp2SolrClient.Builder(solrUrl, inlineSolrClient(), false)
-                    .withQueueSize(indexerConfiguration.getDestinationSolrConfiguration().getConnection().getQueueSize())
-                    .withThreadCount(indexerConfiguration.getDestinationSolrConfiguration().getConnection().getThreadCount())
-                    .build();
-        } catch (Exception e) {
-            log.error("Error creating inlineConcurrentClient bean", e);
-            throw e;
-        }
-    }
-
-
     @Bean
     @Named("inlineSolrClient")
     public Http2SolrClient inlineSolrClient() {
@@ -64,23 +46,6 @@ public class SolrClientService {
         Http2SolrClient client = createClient();
         log.info("Destination inline solr client created.");
         return client;
-    }
-
-    @Bean
-    @Named("inlineConcurrentClient")
-    @Requires(bean = Http2SolrClient.class)
-    public ConcurrentUpdateHttp2SolrClient inlineConcurrentClient() {
-        try {
-            log.info("Creating inlineConcurrentClient bean");
-            String solrUrl = indexerConfiguration.getDestinationSolrConfiguration().getConnection().getUrl();
-            return new ConcurrentUpdateHttp2SolrClient.Builder(solrUrl, inlineSolrClient(), false)
-                    .withQueueSize(indexerConfiguration.getDestinationSolrConfiguration().getConnection().getQueueSize())
-                    .withThreadCount(indexerConfiguration.getDestinationSolrConfiguration().getConnection().getThreadCount())
-                    .build();
-        } catch (Exception e) {
-            log.error("Error creating inlineConcurrentClient bean", e);
-            throw e;
-        }
     }
 
     private @NotNull Http2SolrClient createClient() {

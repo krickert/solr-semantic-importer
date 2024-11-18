@@ -11,6 +11,7 @@ import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,10 +24,11 @@ public class ChunkDocumentListener implements DocumentListener {
     private static final Logger log = LoggerFactory.getLogger(ChunkDocumentListener.class);
     private static final Integer DEFAULT_BATCH_SIZE = 3;
     private final Map<String, VectorConfig> chunkVectorConfig;
-    private final ConcurrentUpdateHttp2SolrClient vectorSolrClient;
+    private final Http2SolrClient vectorSolrClient;
     private final IndexingTracker indexingTracker;
     private final Integer batchSize;
     private final ChunkDocumentCreator chunkDocumentCreator;
+    private final String parentCollection;
 
     public ChunkDocumentListener(IndexerConfiguration indexerConfiguration,
                                  SolrClientService solrClientService,
@@ -34,12 +36,13 @@ public class ChunkDocumentListener implements DocumentListener {
                                  @Named("vectorEmbeddingService") EmbeddingServiceGrpc.EmbeddingServiceBlockingStub vectorEmbeddingService,
                                  @Named("vectorChunkerService") ChunkServiceGrpc.ChunkServiceBlockingStub chunkingService) {
         this.chunkVectorConfig = indexerConfiguration.getChunkVectorConfig();
-        this.vectorSolrClient = solrClientService.vectorConcurrentClient();
+        this.vectorSolrClient = solrClientService.vectorSolrClient();
         this.indexingTracker = indexingTracker;
         this.chunkDocumentCreator = new ChunkDocumentCreator(chunkingService, vectorEmbeddingService, 3);
         Integer vectorBatchSize = indexerConfiguration.getIndexerConfigurationProperties().getVectorBatchSize();
         this.batchSize = vectorBatchSize == null || vectorBatchSize < 1 ? DEFAULT_BATCH_SIZE : vectorBatchSize;
         log.info("Batch size for the chunk listener is set to {}", this.batchSize);
+        this.parentCollection = indexerConfiguration.getDestinationSolrConfiguration().getCollection();
     }
 
     @Override
@@ -52,13 +55,13 @@ public class ChunkDocumentListener implements DocumentListener {
 
         chunkVectorConfig.forEach((fieldName, vectorConfig) -> {
             try {
-                processField(new ChunkDocumentRequest(document, fieldName, vectorConfig, origDocId));
+                log.info("processing field {} for document with ID {}", fieldName, origDocId);
+                processField(new ChunkDocumentRequest(document, fieldName, vectorConfig, origDocId, parentCollection));
             } catch (RuntimeException e) {
                 log.error("could not process document with id {} due to error: {}", origDocId, e.getMessage(), e);
                 indexingTracker.vectorDocumentFailed();
-            }
-        }
-  );
+            }}
+        );
     }
 
     private void assertRequiredFieldsPresent(SolrInputDocument document) {
